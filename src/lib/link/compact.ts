@@ -6,9 +6,10 @@ import { GROUPS } from './labels'
  * Compact links carry values only. Labels, common values and common text fragments live in the
  * append-only tables of labels.ts and dictionary.ts, and links already sent index into them.
  *
- * Every FRAGMENTS and DERIVED entry is one token character, and the wire format (report.ts) sends
- * a token as one byte: 128 slots in all, FRAGMENTS counting up from the first, DERIVED down from
- * the last.
+ * Every FRAGMENTS and DERIVED entry is one token character, and the wire format (wire.ts) sends a
+ * token as one byte: 128 slots in all, FRAGMENTS counting up from the first, DERIVED down from
+ * the last. On the wire each value is coded under its field's model, primed with the values
+ * LIKELY (labels.ts) expects in that row, so a Yes where a Yes is expected costs about a bit.
  */
 type Extra = [section: string, label: string, value: string | null]
 // A number is null (0), absent (-1) or a COMMON value; a string has fragment tokens; [text] is
@@ -69,7 +70,7 @@ const derivedFragments = (seconds: number, row: Lookup): Fragments =>
     String.fromCharCode(LAST_TOKEN - i),
   ]).filter(([fragment]) => fragment !== '')
 
-const FIELDS = GROUPS.flatMap(([section, labels]) =>
+export const FIELDS = GROUPS.flatMap(([section, labels]) =>
   labels.map((label): [string, string] => [section, label]),
 )
 const INDEX = new Map(FIELDS.map(([section, label], index) => [`${section}\n${label}`, index]))

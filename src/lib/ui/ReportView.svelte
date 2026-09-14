@@ -1,27 +1,33 @@
 <script lang="ts">
 import type { Snippet } from 'svelte'
+import { fill, type Lang, t } from '$lib/i18n'
 import { NOT_AVAILABLE, type Report } from '$lib/report'
 
 type Props = {
   report: Report
   oncopy: (label: string, value: string) => void
+  lang: Lang
   /** Rendered between the glance card and the full list. */
   children?: Snippet
 }
 
-let { report, oncopy, children }: Props = $props()
+let { report, oncopy, lang, children }: Props = $props()
+
+const tr = (key: string): string => t(lang, key)
 
 // A zero-width space after each "/" lets "Europe/Amsterdam" wrap at the slash, not mid-word.
 const wrapAtSlashes = (text: string) => text.split('/').join('/​')
 </script>
 
 <section class="glance rise" aria-labelledby="glance-title">
-  <h2 id="glance-title" class="eyebrow">At a glance</h2>
+  <h2 id="glance-title" class="eyebrow">{tr('At a glance')}</h2>
   <dl>
     {#each report.summary as [label, value]}
       <div class="glance-row">
-        <dt>{label}</dt>
-        <dd class:missing={value === null}>{value === null ? NOT_AVAILABLE : wrapAtSlashes(value)}</dd>
+        <dt>{tr(label)}</dt>
+        <dd class:missing={value === null}>
+          <bdi>{value === null ? tr(NOT_AVAILABLE) : wrapAtSlashes(tr(value))}</bdi>
+        </dd>
       </div>
     {/each}
   </dl>
@@ -32,16 +38,18 @@ const wrapAtSlashes = (text: string) => text.split('/').join('/​')
 <!-- Never key these loops by label: a crafted link can repeat labels, and duplicate keys throw. -->
 <section class="details" aria-labelledby="details-title">
   <header class="rise" style:--i={2}>
-    <h2 id="details-title">All details</h2>
-    <p id="copy-hint">Tap a line to copy it.</p>
+    <h2 id="details-title">{tr('All details')}</h2>
+    <p id="copy-hint">{tr('Tap a line to copy it.')}</p>
   </header>
   {#each report.sections as section, index}
     {@const found = section.rows.filter(([, value]) => value !== null)}
     {@const missing = section.rows.filter(([, value]) => value === null).map(([label]) => label)}
     <details class="section rise" style:--i={index + 3} open>
       <summary>
-        <span>{section.title}</span>
-        <span class="count">{section.rows.length}<span class="visually-hidden"> lines</span></span>
+        <span>{tr(section.title)}</span>
+        <span class="count"
+          >{section.rows.length}<span class="visually-hidden">{' '}{tr('lines')}</span></span
+        >
       </summary>
       <ul>
         {#each found as [label, value]}
@@ -50,17 +58,21 @@ const wrapAtSlashes = (text: string) => text.split('/').join('/​')
               type="button"
               class="row"
               aria-describedby="copy-hint"
-              onclick={() => oncopy(label, value ?? NOT_AVAILABLE)}
+              onclick={() => oncopy(tr(label), tr(value ?? NOT_AVAILABLE))}
             >
-              <span class="label">{label}</span>
-              <span class="value">{value}</span>
+              <span class="label">{tr(label)}</span>
+              <span class="value"><bdi>{tr(value ?? NOT_AVAILABLE)}</bdi></span>
             </button>
           </li>
         {/each}
       </ul>
       <!-- One quiet line instead of a column of "Not available": on iPhone that is a third of the rows. -->
       {#if missing.length > 0}
-        <p class="missing-note">Not available in this browser: {missing.join(', ')}.</p>
+        <p class="missing-note">
+          {fill(tr('Not available in this browser: {labels}.'), {
+            labels: missing.map((label) => tr(label)).join(', '),
+          })}
+        </p>
       {/if}
     </details>
   {/each}
@@ -179,8 +191,8 @@ const wrapAtSlashes = (text: string) => text.split('/').join('/​')
     content: '';
     width: 0.55rem;
     height: 0.55rem;
-    margin-left: auto;
-    border-right: 2px solid currentcolor;
+    margin-inline-start: auto;
+    border-inline-end: 2px solid currentcolor;
     border-bottom: 2px solid currentcolor;
     transform: translateY(-25%) rotate(45deg);
     transition: transform 0.2s var(--ease);
@@ -215,7 +227,7 @@ const wrapAtSlashes = (text: string) => text.split('/').join('/​')
     background: none;
     color: inherit;
     font: inherit;
-    text-align: left;
+    text-align: start;
     cursor: copy;
   }
 

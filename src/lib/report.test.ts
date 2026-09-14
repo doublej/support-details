@@ -1,7 +1,7 @@
 import { deflateSync } from 'node:zlib'
 import { describe, expect, it } from 'vitest'
 import { legacyLink } from './fixtures'
-import { decodeReport, encodeReport, type Report, reportToText } from './report'
+import { decodeReport, encodeReport, HASH_PREFIX, type Report, reportToText } from './report'
 
 const report: Report = {
   v: 1,
@@ -41,10 +41,16 @@ describe('report links', () => {
     expect(legacy.sections[1].rows[2]).toEqual(['Cookies', 'Working'])
   })
 
-  it('round-trips through a compact, compressed, URL-safe payload', async () => {
+  it('round-trips through a compact, coded, URL-safe payload', async () => {
     const payload = await encodeReport(report)
-    expect(payload).toMatch(/^t[\w-]+$/)
+    expect(payload).toMatch(/^e[\w-]+$/)
     expect(await decodeReport(payload)).toEqual(report)
+  })
+
+  it('reads a payload after either hash prefix', () => {
+    expect('#r=e123'.replace(HASH_PREFIX, '')).toBe('e123')
+    expect('#e123'.replace(HASH_PREFIX, '')).toBe('e123')
+    expect(''.replace(HASH_PREFIX, '')).toBe('')
   })
 
   it('still opens the older self-describing links', async () => {

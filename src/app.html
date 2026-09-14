@@ -21,17 +21,29 @@
 			If it is still here after 5 seconds, show the two facts support needs most. ES5 only.
 		-->
 		<div id="fallback" hidden style="margin: 1rem; padding: 1rem; border: 2px solid #1c1b17; border-radius: 12px; background: #fbfaf5; color: #1c1b17; font: 17px/1.4 sans-serif">
-			<p style="margin: 0 0 0.75rem"><strong>This browser is too old for the full page.</strong> Copy the text below and send it to the person helping you.</p>
+			<p style="margin: 0 0 0.75rem"><strong id="fallback-title">This browser is too old for the full page.</strong> <span id="fallback-body">Copy the text below and send it to the person helping you.</span></p>
 			<textarea id="fallback-text" readonly rows="7" style="box-sizing: border-box; width: 100%; font: 14px monospace"></textarea>
 		</div>
 		<script>
+			var SUPPORT_DETAILS_FALLBACK = {
+				en: { title: 'This browser is too old for the full page.', body: 'Copy the text below and send it to the person helping you.', ua: 'User agent', screen: 'Screen' },
+				zh: { title: '这个浏览器太旧，打不开完整页面。', body: '请复制下面的文字，发给帮你的人。', ua: '用户代理', screen: '屏幕' },
+				hi: { title: 'यह ब्राउज़र पूरे पेज के लिए बहुत पुराना है।', body: 'नीचे दिया टेक्स्ट कॉपी करके आपको मदद करने वाले को भेजें।', ua: 'यूज़र एजेंट', screen: 'स्क्रीन' },
+				es: { title: 'Este navegador es demasiado viejo para la página completa.', body: 'Copia el texto de abajo y envíaselo a quien te ayuda.', ua: 'Agente de usuario', screen: 'Pantalla' },
+				ar: { title: 'هذا المتصفح أقدم من أن يعرض الصفحة كاملة.', body: 'انسخ النص أدناه وأرسله إلى من يساعدك.', ua: 'وكيل المستخدم', screen: 'الشاشة' },
+				fr: { title: 'Ce navigateur est trop vieux pour la page complète.', body: 'Copiez le texte ci-dessous et envoyez-le à la personne qui vous aide.', ua: 'Agent utilisateur', screen: 'Écran' }
+			};
 			// biome-ignore lint/complexity/useArrowFunction: this fallback must parse in ES5-only browsers
 			setTimeout(function () {
 				var box = document.getElementById('fallback')
 				if (!box) return
+				var code = (navigator.language || 'en').split('-')[0].toLowerCase()
+				var strings = SUPPORT_DETAILS_FALLBACK[code] || SUPPORT_DETAILS_FALLBACK.en
+				document.getElementById('fallback-title').textContent = strings.title
+				document.getElementById('fallback-body').textContent = strings.body
 				document.getElementById('fallback-text').value =
-					'User agent: ' + navigator.userAgent + '\n' +
-					'Screen: ' + screen.width + ' x ' + screen.height + ' at ' + (window.devicePixelRatio || 1) + 'x'
+					strings.ua + ': ' + navigator.userAgent + '\n' +
+					strings.screen + ': ' + screen.width + ' x ' + screen.height + ' at ' + (window.devicePixelRatio || 1) + 'x'
 				box.hidden = false
 			}, 5000)
 		</script>

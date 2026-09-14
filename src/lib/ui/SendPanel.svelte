@@ -1,34 +1,37 @@
 <script lang="ts">
+import { type Lang, t } from '$lib/i18n'
 import ShareGuide from './ShareGuide.svelte'
 
-type Props = { note: string; link: string; mailto: string; oncopytext: () => void }
+type Props = { note: string; link: string; mailto: string; oncopytext: () => void; lang: Lang }
 
-let { note = $bindable(), link, mailto, oncopytext }: Props = $props()
+let { note = $bindable(), link, mailto, oncopytext, lang }: Props = $props()
+
+const tr = (key: string): string => t(lang, key)
 </script>
 
 <section class="send rise" style:--i={1} aria-labelledby="send-title">
-  <h2 id="send-title">Send it</h2>
+  <h2 id="send-title">{tr('Send it')}</h2>
   <label class="field">
-    <span>Add a note <em>(optional)</em></span>
+    <span>{tr('Add a note')} <em>{tr('(optional)')}</em></span>
     <input
       bind:value={note}
       maxlength="140"
       autocomplete="off"
       enterkeyhint="done"
-      placeholder="Your name, ticket number, or what went wrong"
+      placeholder={tr('Your name, ticket number, or what went wrong')}
     />
   </label>
-  <ShareGuide />
+  <ShareGuide {lang} />
   <!-- The dock covers the common case; the other ways stay one tap away. -->
   <details class="more">
-    <summary>Other ways to send</summary>
+    <summary>{tr('Other ways to send')}</summary>
     <div class="more-body">
       <div class="actions">
-        <button class="button" type="button" onclick={oncopytext}>Copy as text</button>
-        <a class="button" href={mailto}>Email it</a>
+        <button class="button" type="button" onclick={oncopytext}>{tr('Copy as text')}</button>
+        <a class="button" href={mailto}>{tr('Email it')}</a>
       </div>
       <label class="field">
-        <span>Your link</span>
+        <span>{tr('Your link')}</span>
         <input class="link" readonly value={link} onfocus={(event) => event.currentTarget.select()} />
       </label>
     </div>
