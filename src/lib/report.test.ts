@@ -43,7 +43,7 @@ describe('report links', () => {
 
   it('round-trips through a compact, compressed, URL-safe payload', async () => {
     const payload = await encodeReport(report)
-    expect(payload).toMatch(/^c[\w-]+$/)
+    expect(payload).toMatch(/^t[\w-]+$/)
     expect(await decodeReport(payload)).toEqual(report)
   })
 

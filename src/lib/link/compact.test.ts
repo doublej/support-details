@@ -1,7 +1,8 @@
+import { deflateRawSync } from 'node:zlib'
 import { afterEach, describe, expect, it, vi } from 'vitest'
+import { macReport } from '../fixtures'
+import { decodeReport, encodeReport, type Report, type Row } from '../report'
 import { type Packed, packReport, unpackReport } from './compact'
-import { macReport } from './fixtures'
-import { decodeReport, encodeReport, type Report } from './report'
 
 // macReport packed exactly as the first compact release wrote it. If this test fails, a list in
 // compact.ts was reordered, shortened or reworded, and links people already sent now show wrong
@@ -81,6 +82,14 @@ const FROZEN: Packed = [
   ],
 ]
 
+const withLocalTime = (value: string): Report => ({
+  ...macReport,
+  sections: macReport.sections.map((section) => ({
+    ...section,
+    rows: section.rows.map((row): Row => (row[0] === 'Local time' ? ['Local time', value] : row)),
+  })),
+})
+
 afterEach(() => vi.unstubAllGlobals())
 
 describe('compact links', () => {
@@ -88,18 +97,43 @@ describe('compact links', () => {
     expect(unpackReport(FROZEN)).toEqual(macReport)
   })
 
-  it('round-trips a full report in about a third of the old length', async () => {
+  it('still opens links with three-byte tokens', async () => {
+    const json = JSON.stringify(FROZEN)
+    const deflated = `c${deflateRawSync(json).toString('base64url')}`
+    expect(await decodeReport(deflated)).toEqual(macReport)
+    expect(await decodeReport(`p${Buffer.from(json).toString('base64url')}`)).toEqual(macReport)
+  })
+
+  it('round-trips a full report in about a sixth of a JSON link', async () => {
     const payload = await encodeReport(macReport)
-    expect(payload).toMatch(/^c[\w-]+$/)
-    expect(payload.length).toBeLessThan(600)
+    expect(payload).toMatch(/^t[\w-]+$/)
+    expect(payload.length).toBeLessThan(320)
     expect(await decodeReport(payload)).toEqual(macReport)
   })
 
-  it('falls back to plain compact JSON without CompressionStream', async () => {
+  it('falls back to plain token bytes without CompressionStream', async () => {
     vi.stubGlobal('CompressionStream', undefined)
     const payload = await encodeReport(macReport)
-    expect(payload).toMatch(/^p[\w-]+$/)
+    expect(payload).toMatch(/^u[\w-]+$/)
     expect(await decodeReport(payload)).toEqual(macReport)
+  })
+
+  it('sends rows other rows determine as one token each', () => {
+    const [, , values] = packReport(macReport)
+    expect(values[3]).toBe('\uE07F') // At a glance → Screen: size at ratio
+    expect(values[21]).toBe('\uE07D') // Screen in device pixels
+    expect(values[61]).toMatch(/^\uE07E \(/) // Local time: date and offset, then the zone name
+  })
+
+  it('sends a derived row as text when it does not match', () => {
+    const report = withLocalTime('Mon Sep 14 2026 14:09:56 GMT+0200 (Central European Summer Time)')
+    const packed = packReport(report)
+    expect(packed[2][61]).toMatch(/^Mon Sep 14 2026 14:09:56/)
+    expect(unpackReport(packed)).toEqual(report)
+  })
+
+  it('rejects a derived token whose inputs are missing', () => {
+    expect(() => unpackReport(['0', '', ['\uE07F']])).toThrow('Not a device report')
   })
 
   it('keeps private-use text in place and sends unknown rows verbatim', () => {
