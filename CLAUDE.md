@@ -40,6 +40,12 @@ The runtime path is `/` → `+page.svelte` reads `location.hash`: `#r=<payload>`
 - A collector reports `null` ("Not available") when the browser does not expose a value. Never guess.
 - The share sheet needs the tap's user activation, so the link is precomputed in an `$effect`; never `await` before `navigator.share`.
 
+## Old browsers
+
+- `vite.config.ts` builds for `safari14`, not Vite's default Safari 16.4: support is often asked about old phones.
+- `src/app.html` holds `#fallback`, an ES5 script that shows the user agent and screen size after 5 s. `+page.svelte` removes the element on mount, so it only appears where the app never booted. Keep that script ES5 (Biome wants arrow functions; the `biome-ignore` stays).
+- The fixed bottom `.dock` always holds `Credits` (jurrejan.com + GitHub); action buttons join it in the own and shared views.
+
 ## Invariants
 
 - File-based routing under `src/routes/` — folder name = URL segment, `+page.svelte` / `+page.ts` / `+page.server.ts` are SvelteKit-reserved.

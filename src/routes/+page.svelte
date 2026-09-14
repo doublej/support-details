@@ -181,14 +181,12 @@ const copyRow = (label: string, value: string) => copy(`${label}: ${value}`, `Co
       </div>
     </ReportView>
   {/if}
-
-  <Credits />
 </main>
 
-<!-- Primary action on the right, under the right thumb. -->
-{#if mode === 'own' || mode === 'shared'}
-  <nav class="dock" aria-label={mode === 'own' ? 'Send your details' : 'Report actions'}>
-    <div class="actions">
+<!-- Fixed to the bottom of the viewport: actions (primary on the right, under the thumb) and credits. -->
+<div class="dock">
+  {#if mode === 'own' || mode === 'shared'}
+    <nav class="actions" aria-label={mode === 'own' ? 'Send your details' : 'Report actions'}>
       {#if mode === 'own'}
         <button class="button" type="button" onclick={() => copy(link, LINK_COPIED)} disabled={!link}>
           Copy link
@@ -202,9 +200,10 @@ const copyRow = (label: string, value: string) => copy(`${label}: ${value}`, `Co
           Copy as text
         </button>
       {/if}
-    </div>
-  </nav>
-{/if}
+    </nav>
+  {/if}
+  <Credits />
+</div>
 
 <p class="toast" class:visible={Boolean(toast)} role="status">{toast}</p>
 
@@ -214,7 +213,7 @@ const copyRow = (label: string, value: string) => copy(`${label}: ${value}`, `Co
     gap: 1.75rem;
     width: min(100% - 2.5rem, 44rem);
     margin-inline: auto;
-    padding-block: max(1.25rem, env(safe-area-inset-top)) calc(6.5rem + env(safe-area-inset-bottom));
+    padding-block: max(1.25rem, env(safe-area-inset-top)) calc(8.5rem + env(safe-area-inset-bottom));
   }
 
   .masthead {

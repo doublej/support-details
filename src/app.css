@@ -204,11 +204,13 @@ h2 {
   }
 }
 
-/* Fixed action bar in the thumb zone, and the toast that floats just above it. */
+/* Fixed bottom bar: actions in the thumb zone plus the credits line, and the toast above it. */
 .dock {
   position: fixed;
   inset: auto 0 0;
   z-index: 10;
+  display: grid;
+  gap: 0.4rem;
   padding: 0.75rem max(1.25rem, env(safe-area-inset-right))
     calc(0.75rem + env(safe-area-inset-bottom)) max(1.25rem, env(safe-area-inset-left));
   border-top: 1px solid var(--rule);
@@ -225,7 +227,7 @@ h2 {
 
 .toast {
   position: fixed;
-  bottom: calc(5.75rem + env(safe-area-inset-bottom));
+  bottom: calc(7.5rem + env(safe-area-inset-bottom));
   left: 50%;
   z-index: 20;
   width: max-content;

@@ -25,7 +25,8 @@
 			<textarea id="fallback-text" readonly rows="7" style="box-sizing: border-box; width: 100%; font: 14px monospace"></textarea>
 		</div>
 		<script>
-			setTimeout(() => {
+			// biome-ignore lint/complexity/useArrowFunction: this fallback must parse in ES5-only browsers
+			setTimeout(function () {
 				var box = document.getElementById('fallback')
 				if (!box) return
 				document.getElementById('fallback-text').value =
