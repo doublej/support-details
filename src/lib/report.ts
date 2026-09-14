@@ -1,4 +1,5 @@
 import { FIRST_TOKEN, packReport, unpackReport } from './link/compact'
+import { fromWire, toWire } from './link/wire'
 
 /**
  * A captured device report. Links carry it in the compact format of compact.ts. Change the shape
@@ -11,26 +12,29 @@ export type Report = { v: 1; at: string; note: string; summary: Row[]; sections:
 export const HASH_KEY = '#r='
 export const NOT_AVAILABLE = 'Not available'
 
-// Payload = format flag + base64url. 't' is the compact form as token bytes, deflated; 'u' is the
-// same plain, for browsers without CompressionStream (Safari before 16.4). Older links are still
-// read, no longer written: 'c' / 'p' (compact form as UTF-8, deflated / plain) and 'z' / 'j'
-// (self-describing JSON, deflated / plain).
+// Payload = format flag + base64url. 'b' is the compact form as wire bytes (wire.ts), deflated;
+// 'a' is the same plain, for browsers without CompressionStream (Safari before 16.4). Older links
+// are still read, no longer written: 't' / 'u' (compact form as JSON in token bytes, deflated /
+// plain), 'c' / 'p' (compact form as JSON in UTF-8) and 'z' / 'j' (self-describing JSON, deflated
+// with a zlib header / plain).
 const FORMATS: Record<
   string,
-  { compression?: CompressionFormat; compact: boolean; tokenBytes?: boolean }
+  { compression?: CompressionFormat; wire?: boolean; compact?: boolean; tokenBytes?: boolean }
 > = {
+  b: { compression: 'deflate-raw', wire: true },
+  a: { wire: true },
   t: { compression: 'deflate-raw', compact: true, tokenBytes: true },
   u: { compact: true, tokenBytes: true },
   c: { compression: 'deflate-raw', compact: true },
   p: { compact: true },
-  z: { compression: 'deflate', compact: false },
-  j: { compact: false },
+  z: { compression: 'deflate' },
+  j: {},
 }
 
 export async function encodeReport(report: Report): Promise<string> {
-  const bytes = toTokenBytes(JSON.stringify(packReport(report)))
-  if (typeof CompressionStream === 'undefined') return `u${toBase64Url(bytes)}`
-  return `t${toBase64Url(await transform(bytes, new CompressionStream('deflate-raw')))}`
+  const bytes = toWire(packReport(report))
+  if (typeof CompressionStream === 'undefined') return `a${toBase64Url(bytes)}`
+  return `b${toBase64Url(await transform(bytes, new CompressionStream('deflate-raw')))}`
 }
 
 export async function decodeReport(payload: string): Promise<Report> {
@@ -40,23 +44,15 @@ export async function decodeReport(payload: string): Promise<Report> {
   const raw = format.compression
     ? await transform(bytes, new DecompressionStream(format.compression))
     : bytes
+  if (format.wire) return parseReport(unpackReport(fromWire(raw)))
   const json = format.tokenBytes ? fromTokenBytes(raw) : new TextDecoder().decode(raw)
   const data = JSON.parse(json)
   return parseReport(format.compact ? unpackReport(data) : data)
 }
 
-// Token bytes: ASCII as is, a token character (compact.ts, U+E000 up) as one byte from 0x80 up
-// instead of three as UTF-8, any other non-ASCII character as a JSON \u escape.
+// Token bytes of the 't' / 'u' formats: ASCII as is, a token character (compact.ts, U+E000 up) as
+// one byte from 0x80 up; other non-ASCII characters were sent as JSON \u escapes.
 const BYTE_TOKEN = 0x80
-const NON_ASCII = /[\u0080-\uDFFF\uE080-\uFFFF]/g
-
-function toTokenBytes(json: string): Uint8Array<ArrayBuffer> {
-  const escapeChar = (char: string) => `\\u${char.charCodeAt(0).toString(16).padStart(4, '0')}`
-  return Uint8Array.from(json.replace(NON_ASCII, escapeChar), (char) => {
-    const code = char.charCodeAt(0)
-    return code < BYTE_TOKEN ? code : code - FIRST_TOKEN + BYTE_TOKEN
-  })
-}
 
 function fromTokenBytes(bytes: Uint8Array): string {
   let json = ''

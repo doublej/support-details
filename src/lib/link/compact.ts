@@ -6,8 +6,8 @@ import { GROUPS } from './labels'
  * Compact links carry values only. Labels, common values and common text fragments live in the
  * append-only tables of labels.ts and dictionary.ts, and links already sent index into them.
  *
- * Every FRAGMENTS and DERIVED entry is one token character, and the wire format (report.ts) sends
- * a token as one byte: 128 slots in all, FRAGMENTS counting up from the first, DERIVED down from
+ * Every FRAGMENTS and DERIVED entry is one token character, and the wire format (wire.ts) sends a
+ * token as one byte: 128 slots in all, FRAGMENTS counting up from the first, DERIVED down from
  * the last.
  */
 type Extra = [section: string, label: string, value: string | null]

@@ -24,6 +24,7 @@ src/
 │   ├── report.ts       # Report shape, link payload encode/decode + validation, plain-text export
 │   ├── link/           # compact link format
 │   │   ├── compact.ts      # pack / unpack, derived rows, token characters
+│   │   ├── wire.ts         # packed report ↔ bytes, no JSON framing
 │   │   ├── labels.ts       # GROUPS: append-only row labels, by section
 │   │   └── dictionary.ts   # COMMON + FRAGMENTS: append-only whole values and text fragments
 │   ├── fixtures.ts     # a full Mac Chrome report for link format tests
@@ -43,8 +44,8 @@ The runtime path is `/` → `+page.svelte` reads `location.hash`: `#r=<payload>`
 
 ## Report links
 
-- The report lives in the URL fragment (`/#r=<payload>`), so it never reaches the server and there is no backend. Payload = format flag + base64url: `t` compact as token bytes + deflate-raw, `u` the same plain for browsers without `CompressionStream`. Older links are still read, never written: `c` / `p` (compact as UTF-8), `z` / `j` (self-describing JSON).
-- Compact links carry values only, about a sixth of a JSON link. Labels, common values and text fragments (swapped for private-use characters, one byte each on the wire) live in `src/lib/compact.ts`, and links already sent index into them: **those lists are append-only**. `DERIVED` holds text other rows determine (screen summary, device pixels, the local time's date and offset): the sender swaps it for one token only when it matches exactly, so a mismatch costs length, never truth. Token slots: 128 for `FRAGMENTS` + `DERIVED` together. A new collector row → a new group at the end of `GROUPS`; until then it travels verbatim in `extras` and the dev console warns. Never edit `FROZEN` in `compact.test.ts` to make a test pass.
+- The report lives in the URL fragment (`/#r=<payload>`), so it never reaches the server and there is no backend. Payload = format flag + base64url: `b` compact as wire bytes (`wire.ts`: tag bytes, no JSON) + deflate-raw, `a` the same plain for browsers without `CompressionStream`. Older links are still read, never written: `t` / `u` (compact as JSON in token bytes), `c` / `p` (compact as JSON in UTF-8), `z` / `j` (self-describing JSON). Frozen real links of each generation live in `fixtures.ts`.
+- Compact links carry values only, about a seventh of a JSON link (the Mac fixture: 1729 → 240 characters). Labels, common values and text fragments (swapped for private-use characters, one byte each on the wire) live in `src/lib/link/`, and links already sent index into them: **those lists are append-only**. `wire.ts` caps `COMMON` at 190 entries (the number tag range); it throws at import when the table outgrows it. `DERIVED` holds text other rows determine (screen summary, device pixels, the local time's date and offset): the sender swaps it for one token only when it matches exactly, so a mismatch costs length, never truth. Token slots: 128 for `FRAGMENTS` + `DERIVED` together. A new collector row → a new group at the end of `GROUPS`; until then it travels verbatim in `extras` and the dev console warns. Never edit `FROZEN` in `compact.test.ts` to make a test pass.
 - Changing the in-memory `Report` shape → bump `v` and keep reading v1.
 - Shared links are untrusted: `parseReport` validates the shape, values render as text only (never `{@html}`), and `{#each}` over rows is never keyed by label (duplicate keys in a crafted link would throw).
 - A collector reports `null` ("Not available") when the browser does not expose a value. Never guess.
