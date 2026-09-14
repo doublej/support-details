@@ -5,7 +5,8 @@
   --card: #fbfaf5;
   --ink: #1c1b17;
   --ink-soft: #5f5b50;
-  --ink-faint: #9a958a;
+  /* --ink-faint still carries text ("Not available", placeholders): keep it at 4.5:1 or more. */
+  --ink-faint: #6f6a5e;
   --rule: #d8d1bf;
   --carbon: #2336c4;
   --carbon-ink: #fbfaf5;
@@ -28,7 +29,7 @@
     --card: #1a1b24;
     --ink: #eeece4;
     --ink-soft: #a9a69c;
-    --ink-faint: #6f6d67;
+    --ink-faint: #8c8a82;
     --rule: #2e3040;
     --carbon: #9fabff;
     --carbon-ink: #111219;
@@ -37,6 +38,16 @@
     --grain: 0;
     --shadow: 0 1px 0 rgb(0 0 0 / 30%), 0 16px 40px -20px rgb(0 0 0 / 70%);
   }
+}
+
+/* Read by screen readers, invisible on screen. */
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
 }
 
 *,

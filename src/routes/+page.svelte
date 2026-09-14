@@ -16,6 +16,7 @@ let report = $state.raw<Report | null>(null)
 let note = $state('')
 let link = $state('')
 let home = $state('')
+let tooOld = $state(false)
 let toast = $state('')
 let toastTimer: ReturnType<typeof setTimeout> | undefined
 
@@ -43,10 +44,14 @@ async function load() {
   // Chat apps sometimes cut long links short, so a link that won't decode is an expected state.
   report = await decodeReport(payload).catch(() => null)
   link = location.href
+  // Safari before 16.4 cannot unpack compressed links at all; a resend would fail the same way.
+  tooOld = !report && typeof DecompressionStream === 'undefined'
   mode = report ? 'shared' : 'broken'
 }
 
 onMount(() => {
+  // The app runs, so the ES5 fallback for very old browsers in app.html can go.
+  document.getElementById('fallback')?.remove()
   home = `${location.origin}/`
   load()
   window.addEventListener('hashchange', load)
@@ -107,11 +112,19 @@ const copyRow = (label: string, value: string) => copy(`${label}: ${value}`, `Co
     </section>
   {:else if mode === 'broken'}
     <section class="stack rise" style:--i={1}>
-      <h1>This link didn’t open.</h1>
-      <p class="lede">
-        Part of it was probably cut off when it was sent, or this browser is too old to read it. Ask
-        the sender to tap <strong>Copy link</strong> and send it again.
-      </p>
+      {#if tooOld}
+        <h1>This browser can’t open the link.</h1>
+        <p class="lede">
+          It is too old to unpack the details. Open the link on a computer or a newer phone, or ask
+          the sender to use <strong>Copy as text</strong> and send that instead.
+        </p>
+      {:else}
+        <h1>This link didn’t open.</h1>
+        <p class="lede">
+          Part of it was probably cut off when it was sent. Ask the sender to tap
+          <strong>Copy link</strong> and send it again.
+        </p>
+      {/if}
       <a class="button primary" href="/" data-sveltekit-reload>Check this device instead</a>
     </section>
   {:else if report && mode === 'own'}
@@ -172,21 +185,22 @@ const copyRow = (label: string, value: string) => copy(`${label}: ${value}`, `Co
   <Credits />
 </main>
 
+<!-- Primary action on the right, under the right thumb. -->
 {#if mode === 'own' || mode === 'shared'}
-  <nav class="dock" aria-label="Send">
+  <nav class="dock" aria-label={mode === 'own' ? 'Send your details' : 'Report actions'}>
     <div class="actions">
       {#if mode === 'own'}
-        <button class="button primary" type="button" onclick={share} disabled={!link}>
-          Share link
-        </button>
         <button class="button" type="button" onclick={() => copy(link, LINK_COPIED)} disabled={!link}>
           Copy link
         </button>
+        <button class="button primary" type="button" onclick={share} disabled={!link}>
+          Share link
+        </button>
       {:else}
+        <a class="button" href="/" data-sveltekit-reload>Check my device</a>
         <button class="button primary" type="button" onclick={() => copy(fullText, TEXT_COPIED)}>
           Copy as text
         </button>
-        <a class="button" href="/" data-sveltekit-reload>Check my device</a>
       {/if}
     </div>
   </nav>

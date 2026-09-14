@@ -10,6 +10,9 @@ type Props = {
 }
 
 let { report, oncopy, children }: Props = $props()
+
+// A zero-width space after each "/" lets "Europe/Amsterdam" wrap at the slash, not mid-word.
+const wrapAtSlashes = (text: string) => text.split('/').join('/​')
 </script>
 
 <section class="glance rise" aria-labelledby="glance-title">
@@ -18,7 +21,7 @@ let { report, oncopy, children }: Props = $props()
     {#each report.summary as [label, value]}
       <div class="glance-row">
         <dt>{label}</dt>
-        <dd class:missing={value === null}>{value ?? NOT_AVAILABLE}</dd>
+        <dd class:missing={value === null}>{value === null ? NOT_AVAILABLE : wrapAtSlashes(value)}</dd>
       </div>
     {/each}
   </dl>
@@ -30,18 +33,23 @@ let { report, oncopy, children }: Props = $props()
 <section class="details" aria-labelledby="details-title">
   <header class="rise" style:--i={2}>
     <h2 id="details-title">All details</h2>
-    <p>Tap a line to copy it.</p>
+    <p id="copy-hint">Tap a line to copy it.</p>
   </header>
   {#each report.sections as section, index}
     <details class="section rise" style:--i={index + 3} open>
       <summary>
         <span>{section.title}</span>
-        <span class="count">{section.rows.length}</span>
+        <span class="count">{section.rows.length}<span class="visually-hidden"> lines</span></span>
       </summary>
       <ul>
         {#each section.rows as [label, value]}
           <li>
-            <button type="button" class="row" onclick={() => oncopy(label, value ?? NOT_AVAILABLE)}>
+            <button
+              type="button"
+              class="row"
+              aria-describedby="copy-hint"
+              onclick={() => oncopy(label, value ?? NOT_AVAILABLE)}
+            >
               <span class="label">{label}</span>
               <span class="value" class:missing={value === null}>{value ?? NOT_AVAILABLE}</span>
             </button>

@@ -7,16 +7,17 @@ type HighEntropy = Hints & {
   bitness?: string
   fullVersionList?: { brand: string; version: string }[]
 }
+type Connection = {
+  type?: string
+  effectiveType?: string
+  downlink?: number
+  rtt?: number
+  saveData?: boolean
+}
 type Nav = Navigator & {
   deviceMemory?: number
   globalPrivacyControl?: boolean
-  connection?: {
-    type?: string
-    effectiveType?: string
-    downlink?: number
-    rtt?: number
-    saveData?: boolean
-  }
+  connection?: Connection
   userAgentData?: { getHighEntropyValues(hints: string[]): Promise<HighEntropy> }
   getBattery?: () => Promise<{ level: number; charging: boolean }>
 }
@@ -26,6 +27,21 @@ const PERMISSIONS: Record<string, string> = {
   default: 'Not asked yet',
   granted: 'Allowed',
   denied: 'Blocked',
+}
+// Network Information API values are estimates from recent traffic, not the radio: "4g" also
+// shows on Wi-Fi, downlink is capped at 10 Mbit/s and rtt is rounded to 25 ms.
+const QUALITY: Record<string, string> = {
+  'slow-2g': 'Very slow',
+  '2g': 'Slow',
+  '3g': 'OK',
+  '4g': 'Good',
+}
+const CONNECTION_TYPES: Record<string, string> = {
+  wifi: 'Wi-Fi',
+  cellular: 'Mobile data',
+  ethernet: 'Wired',
+  bluetooth: 'Bluetooth tethering',
+  none: 'No connection',
 }
 
 function yesNo(flag: boolean | undefined): string | null {
@@ -66,10 +82,10 @@ function deviceSection(nav: Nav, hints: HighEntropy, battery: string | null): Se
   return {
     title: 'Device',
     rows: [
-      ['Platform', nav.platform || null],
+      ['Platform code', nav.platform || null],
       ['Processor', processor || null],
       ['CPU cores', nav.hardwareConcurrency ? String(nav.hardwareConcurrency) : null],
-      // Browsers round memory down and cap it at 8 GB, so this is a lower bound.
+      // Browsers round memory down and cap it, so this is a lower bound.
       ['Memory', nav.deviceMemory ? `At least ${nav.deviceMemory} GB` : null],
       ['Battery', battery],
       ['Touch screen', nav.maxTouchPoints > 0 ? `Yes, ${nav.maxTouchPoints} touch points` : 'No'],
@@ -94,15 +110,18 @@ function browserSection(nav: Nav, hints: HighEntropy): Section {
     rows: [
       ['User agent', nav.userAgent],
       ['Exact versions', versions?.join(', ') || null],
-      ['Vendor', nav.vendor || null],
       ['Cookies enabled', yesNo(nav.cookieEnabled)],
       ['Do Not Track', yesNo(nav.doNotTrack ? nav.doNotTrack === '1' : undefined)],
       ['Global Privacy Control', yesNo(nav.globalPrivacyControl)],
       ['Built-in PDF viewer', yesNo(nav.pdfViewerEnabled)],
       ['Opened as installed app', preference('display-mode', 'standalone', 'browser')],
-      ['Controlled by automation', yesNo(nav.webdriver)],
     ],
   }
+}
+
+function orientation(type: string | undefined): string | null {
+  if (!type) return null
+  return type.startsWith('portrait') ? 'Portrait' : 'Landscape'
 }
 
 function screenSection(): Section {
@@ -114,7 +133,7 @@ function screenSection(): Section {
       ['Screen in device pixels', size(screen.width * ratio, screen.height * ratio)],
       ['Pixel ratio', String(ratio)],
       ['Browser window', size(window.innerWidth, window.innerHeight)],
-      ['Orientation', screen.orientation?.type ?? null],
+      ['Orientation', orientation(screen.orientation?.type)],
       ['Color depth', `${screen.colorDepth}-bit`],
       [
         'Color range',
@@ -129,11 +148,30 @@ function screenSection(): Section {
   }
 }
 
-function appearanceSection(): Section {
+function scale(fontSize: string, base: number): string {
+  const percent = Math.round((Number.parseFloat(fontSize) / base) * 100)
+  return percent === 100 ? 'Default (100%)' : `${percent}% of default`
+}
+
+// iOS Dynamic Type leaves the root font size alone but moves the system body font, which is
+// 17px at the default setting (verified in WebKit docs, not on every device). Elsewhere the
+// root font size follows the browser's text size setting, 16px by default.
+function textSize(os: string): string {
+  if (!/^i(Pad)?OS/.test(os)) return scale(getComputedStyle(document.documentElement).fontSize, 16)
+  const probe = document.createElement('span')
+  probe.style.font = '-apple-system-body'
+  document.body.append(probe)
+  const fontSize = getComputedStyle(probe).fontSize
+  probe.remove()
+  return scale(fontSize, 17)
+}
+
+function appearanceSection(os: string): Section {
   return {
     title: 'Appearance & accessibility',
     rows: [
       ['Dark mode', preference('prefers-color-scheme', 'dark', 'light')],
+      ['Text size', textSize(os)],
       ['Reduce motion', preference('prefers-reduced-motion', 'reduce', 'no-preference')],
       ['Increase contrast', preference('prefers-contrast', 'more', 'no-preference')],
       [
@@ -142,7 +180,6 @@ function appearanceSection(): Section {
       ],
       ['High contrast mode', preference('forced-colors', 'active', 'none')],
       ['Inverted colors', preference('inverted-colors', 'inverted', 'none')],
-      ['Default text size', getComputedStyle(document.documentElement).fontSize],
     ],
   }
 }
@@ -182,30 +219,34 @@ function featuresSection(nav: Nav, storage: StorageEstimate | null): Section {
       ['WebAssembly', yesNo(typeof WebAssembly === 'object')],
       ['Local storage', localStorageStatus()],
       ['Storage quota', storage?.quota ? `${(storage.quota / 1e9).toFixed(1)} GB` : null],
-      ['Service workers', yesNo('serviceWorker' in nav)],
+      ['Websites can work offline', yesNo('serviceWorker' in nav)],
       ['Notifications', notifications ?? NOT_SUPPORTED],
       ['Passkeys', yesNo('PublicKeyCredential' in window)],
       ['Share menu', yesNo('share' in nav)],
-      ['Bluetooth', yesNo('bluetooth' in nav)],
-      ['USB', yesNo('usb' in nav)],
+      ['Websites can use Bluetooth', yesNo('bluetooth' in nav)],
+      ['Websites can use USB', yesNo('usb' in nav)],
     ],
   }
 }
 
+function connectionQuality(connection: Connection | undefined): string | null {
+  if (!connection?.effectiveType) return null
+  const parts = [QUALITY[connection.effectiveType] ?? connection.effectiveType]
+  if (connection.downlink !== undefined) {
+    parts.push(connection.downlink >= 10 ? '10+ Mbit/s' : `about ${connection.downlink} Mbit/s`)
+  }
+  if (connection.rtt !== undefined) parts.push(`about ${connection.rtt} ms delay`)
+  return parts.join(', ')
+}
+
 function networkSection(nav: Nav): Section {
-  const connection = nav.connection
+  const type = nav.connection?.type
   return {
     title: 'Network',
     rows: [
-      ['Online', yesNo(nav.onLine)],
-      ['Connection type', connection?.type ?? null],
-      ['Speed class', connection?.effectiveType ?? null],
-      [
-        'Estimated download speed',
-        connection?.downlink === undefined ? null : `${connection.downlink} Mbit/s`,
-      ],
-      ['Estimated latency', connection?.rtt === undefined ? null : `${connection.rtt} ms`],
-      ['Data saver', yesNo(connection?.saveData)],
+      ['Connection type', type ? (CONNECTION_TYPES[type] ?? type) : null],
+      ['Connection quality (browser estimate)', connectionQuality(nav.connection)],
+      ['Data saver', yesNo(nav.connection?.saveData)],
     ],
   }
 }
@@ -265,7 +306,7 @@ export async function collectReport(): Promise<Report> {
       deviceSection(nav, hints, battery),
       browserSection(nav, hints),
       screenSection(),
-      appearanceSection(),
+      appearanceSection(platform.os),
       featuresSection(nav, storage),
       networkSection(nav),
       localeSection(nav, now),

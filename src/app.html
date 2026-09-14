@@ -16,6 +16,24 @@
 		%sveltekit.head%
 	</head>
 	<body data-sveltekit-preload-data="hover">
+		<!--
+			Fallback for browsers too old to run the app: +page.svelte removes this element on mount.
+			If it is still here after 5 seconds, show the two facts support needs most. ES5 only.
+		-->
+		<div id="fallback" hidden style="margin: 1rem; padding: 1rem; border: 2px solid #1c1b17; border-radius: 12px; background: #fbfaf5; color: #1c1b17; font: 17px/1.4 sans-serif">
+			<p style="margin: 0 0 0.75rem"><strong>This browser is too old for the full page.</strong> Copy the text below and send it to the person helping you.</p>
+			<textarea id="fallback-text" readonly rows="7" style="box-sizing: border-box; width: 100%; font: 14px monospace"></textarea>
+		</div>
+		<script>
+			setTimeout(() => {
+				var box = document.getElementById('fallback')
+				if (!box) return
+				document.getElementById('fallback-text').value =
+					'User agent: ' + navigator.userAgent + '\n' +
+					'Screen: ' + screen.width + ' x ' + screen.height + ' at ' + (window.devicePixelRatio || 1) + 'x'
+				box.hidden = false
+			}, 5000)
+		</script>
 		<div style="display: contents">%sveltekit.body%</div>
 	</body>
 </html>
