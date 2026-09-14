@@ -1,0 +1,33 @@
+{
+  "name": "support-details",
+  "version": "0.1.0",
+  "description": "Device details you can share with support in one tap",
+  "author": "Jurre-Jan Smit",
+  "type": "module",
+  "scripts": {
+    "dev": "vite dev --port 4116",
+    "build": "vite build",
+    "preview": "vite preview",
+    "check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",
+    "test": "vitest --passWithNoTests",
+    "lint": "biome check . && stylelint '**/*.{css,svelte}'",
+    "lint:fix": "biome check --write . && stylelint --fix '**/*.{css,svelte}'"
+  },
+  "dependencies": {
+    "gsap": "^3.13.0"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "^2.5.0",
+    "postcss-html": "^1.0.0",
+    "stylelint": "^17.0.0",
+    "@types/node": "^26.0.0",
+    "@sveltejs/adapter-auto": "^7.0.1",
+    "@sveltejs/kit": "^2.0.0",
+    "@sveltejs/vite-plugin-svelte": "^7.2.0",
+    "svelte": "^5.46.4",
+    "svelte-check": "^4.0.0",
+    "typescript": "^5.9.0",
+    "vite": "^8.2.0",
+    "vitest": "^4.1.0"
+  }
+}

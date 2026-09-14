@@ -1,0 +1,20 @@
+{
+  "template": "typescript/sveltekit",
+  "template_version": "2.6.0",
+  "template_source": {
+    "type": "local",
+    "path": "/Users/jurrejan/dev/_management/cookiecutter-templates",
+    "git_remote": "git@github.com:doublej/cookiecutter-templates.git",
+    "git_sha": "0d6ca7e2093b290d36dedfec197aed317484ddf9"
+  },
+  "rendered_at": "2026-09-14T11:02:24.902850+00:00",
+  "context": {
+    "project_name": "support-details",
+    "project_slug": "support-details",
+    "description": "Device details you can share with support in one tap",
+    "author": "Jurre-Jan Smit",
+    "include_tracking": "n",
+    "mcp_servers": "none",
+    "mcp_scope": "project"
+  }
+}

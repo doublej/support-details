@@ -1,0 +1,12 @@
+{
+  "description": "Device details you can share with support in one tap",
+  "type": "node",
+  "framework": "sveltekit",
+  "port": 4116,
+  "archived": false,
+  "flow": {
+    "policy": "gitflow",
+    "trunk": "main",
+    "integration": "develop"
+  }
+}
