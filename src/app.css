@@ -1,0 +1,238 @@
+/* Design tokens: a carbon-copy service form. Paper ground, ink text, one carbon-blue accent. */
+:root {
+  --paper: #f2efe6;
+  --paper-glass: rgb(242 239 230 / 88%);
+  --card: #fbfaf5;
+  --ink: #1c1b17;
+  --ink-soft: #5f5b50;
+  --ink-faint: #9a958a;
+  --rule: #d8d1bf;
+  --carbon: #2336c4;
+  --carbon-ink: #fbfaf5;
+  --carbon-wash: #e1e4f7;
+  --stamp: #c2352a;
+  --grain: 0.35;
+  --shadow: 0 1px 0 rgb(28 27 23 / 6%), 0 14px 34px -18px rgb(28 27 23 / 35%);
+  --radius: 16px;
+  --ease: cubic-bezier(0.2, 0.7, 0.2, 1);
+  --font-sans: "Bricolage Grotesque Variable", "Avenir Next", "Segoe UI", sans-serif;
+  --font-mono: "IBM Plex Mono", "SF Mono", Menlo, Consolas, monospace;
+
+  color-scheme: light dark;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --paper: #111219;
+    --paper-glass: rgb(17 18 25 / 88%);
+    --card: #1a1b24;
+    --ink: #eeece4;
+    --ink-soft: #a9a69c;
+    --ink-faint: #6f6d67;
+    --rule: #2e3040;
+    --carbon: #9fabff;
+    --carbon-ink: #111219;
+    --carbon-wash: #242a52;
+    --stamp: #ff8a7a;
+    --grain: 0;
+    --shadow: 0 1px 0 rgb(0 0 0 / 30%), 0 16px 40px -20px rgb(0 0 0 / 70%);
+  }
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html {
+  text-size-adjust: 100%;
+}
+
+body {
+  margin: 0;
+  min-height: 100dvh;
+  background: var(--paper);
+  color: var(--ink);
+  font-family: var(--font-sans);
+  font-size: 1.0625rem;
+  line-height: 1.5;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* Paper grain: a tiled noise texture, faint enough to read as warmth rather than pattern. */
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  opacity: var(--grain);
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 .1 0 0 0 0 .1 0 0 0 0 .1 0 0 0 .09 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+
+h1,
+h2 {
+  margin: 0;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  line-height: 1.05;
+}
+
+h1 {
+  font-size: clamp(2.1rem, 9vw, 3.4rem);
+  text-wrap: balance;
+}
+
+h2 {
+  font-size: 1.45rem;
+}
+
+.lede {
+  margin: 0.85rem 0 0;
+  max-width: 34rem;
+  color: var(--ink-soft);
+  font-size: 1.125rem;
+}
+
+.eyebrow {
+  margin: 0;
+  color: var(--ink-soft);
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  font-weight: 500;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.actions {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(9rem, 1fr));
+  gap: 0.625rem;
+}
+
+.button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 3.25rem;
+  padding: 0 1.25rem;
+  border: 1.5px solid var(--ink);
+  border-radius: 999px;
+  background: var(--card);
+  color: var(--ink);
+  font: 600 1rem / 1 var(--font-sans);
+  text-decoration: none;
+  cursor: pointer;
+  touch-action: manipulation;
+  transition:
+    transform 0.15s var(--ease),
+    opacity 0.15s;
+}
+
+.button:active {
+  transform: scale(0.97);
+}
+
+.button.primary {
+  border-color: var(--carbon);
+  background: var(--carbon);
+  color: var(--carbon-ink);
+}
+
+.button:disabled {
+  opacity: 0.5;
+  cursor: progress;
+}
+
+.field {
+  display: grid;
+  gap: 0.4rem;
+  font-size: 0.95rem;
+  font-weight: 600;
+}
+
+.field em {
+  color: var(--ink-soft);
+  font-style: normal;
+  font-weight: 400;
+}
+
+/* 16px text keeps iOS from zooming the page when the field gets focus. */
+.field input {
+  width: 100%;
+  min-height: 3.25rem;
+  padding: 0 1rem;
+  border: 1.5px solid var(--rule);
+  border-radius: 12px;
+  background: var(--card);
+  color: var(--ink);
+  font: 400 1rem var(--font-sans);
+}
+
+.field input::placeholder {
+  color: var(--ink-faint);
+}
+
+:focus-visible {
+  outline: 3px solid var(--carbon);
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .rise {
+    animation: rise 0.6s var(--ease) both;
+    animation-delay: calc(var(--i, 0) * 70ms);
+  }
+}
+
+@keyframes rise {
+  from {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+}
+
+/* Fixed action bar in the thumb zone, and the toast that floats just above it. */
+.dock {
+  position: fixed;
+  inset: auto 0 0;
+  z-index: 10;
+  padding: 0.75rem max(1.25rem, env(safe-area-inset-right))
+    calc(0.75rem + env(safe-area-inset-bottom)) max(1.25rem, env(safe-area-inset-left));
+  border-top: 1px solid var(--rule);
+  background: var(--paper-glass);
+  -webkit-backdrop-filter: blur(14px);
+  backdrop-filter: blur(14px);
+}
+
+.dock .actions {
+  grid-template-columns: 1fr 1fr;
+  width: min(100%, 44rem);
+  margin-inline: auto;
+}
+
+.toast {
+  position: fixed;
+  bottom: calc(5.75rem + env(safe-area-inset-bottom));
+  left: 50%;
+  z-index: 20;
+  width: max-content;
+  max-width: calc(100% - 2.5rem);
+  padding: 0.7rem 1rem;
+  border-radius: 12px;
+  background: var(--ink);
+  color: var(--paper);
+  font-size: 0.95rem;
+  opacity: 0;
+  pointer-events: none;
+  transform: translate(-50%, 0.75rem);
+  transition:
+    opacity 0.2s,
+    transform 0.25s var(--ease);
+}
+
+.toast.visible {
+  opacity: 1;
+  transform: translate(-50%, 0);
+}

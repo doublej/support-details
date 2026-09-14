@@ -4,16 +4,25 @@
 
 ## What this is
 
-A SvelteKit application built with Vite. `bun` for install, Biome for lint + format, `svelte-check` for typechecking, Vitest for tests. SvelteKit owns routing, SSR, and the build adapter.
+**support-details.jurrejan.com**: a one-page site that reads the visiting device (browser, system, screen, accessibility settings, features, network hints, locale) and helps a non-technical person send all of it to whoever is helping them: share sheet, copy link, copy as text, email. The same page renders a received report read-only. SvelteKit prerendered with `adapter-static`, shipped with `just deploy` (`cdy site support-details build`, the NAS Caddy CLI; `cdy prime` for its surface). `bun` for install, Biome for lint + format, `svelte-check` for typechecking, Vitest for tests.
 
 ## Mental model
 
 ```
 src/
 ├── routes/
-│   └── +page.svelte    # home page (file-based routing)
-├── lib/                # shared modules — import via `$lib/...`
-└── app.html            # HTML shell
+│   ├── +layout.ts      # prerender = true, the whole site is static
+│   ├── +layout.svelte  # fonts + app.css
+│   └── +page.svelte    # modes loading / own / shared / broken; share + copy actions, dock, toast
+├── lib/
+│   ├── collect.ts      # reads the device into a Report (browser APIs, client-only)
+│   ├── ua.ts           # user agent + Client Hints → friendly browser / system / device
+│   ├── report.ts       # Report shape, link payload encode/decode + validation, plain-text export
+│   ├── clipboard.ts    # copy + share sheet, with fallbacks for old WebViews and plain HTTP
+│   └── ui/             # ReportView (glance + sections), SendPanel + ShareGuide (send flow), PhoneQr (desktop QR, uqr), Credits
+├── app.css             # tokens (paper / ink / carbon blue), buttons, fields, dock, toast, .rise stagger
+└── app.html            # HTML shell, OG + theme-color meta
+static/og.html          # social preview source → `just og` renders static/og.png
 svelte.config.js        # SvelteKit + adapter config
 vite.config.ts          # Vite + Vitest config
 package.json            # type: module, scripts, dependencies
@@ -21,7 +30,15 @@ tsconfig.json           # extends .svelte-kit/tsconfig.json
 biome.json              # lint + format rules
 ```
 
-The runtime path is `request → src/routes/<path>/+page(.server).svelte → render`. `src/lib/` holds anything reusable; consume via the `$lib` alias. `.svelte-kit/` is generated — never edit by hand.
+The runtime path is `/` → `+page.svelte` reads `location.hash`: `#r=<payload>` decodes and shows a received report, anything else runs `collectReport()` in the browser. `.svelte-kit/` is generated — never edit by hand.
+
+## Report links
+
+- The report lives in the URL fragment (`/#r=<payload>`), so it never reaches the server and there is no backend. Payload = format flag + base64url: `z` deflated JSON, `j` plain JSON for browsers without `CompressionStream`.
+- Reports are self-describing (labels travel with values). Rendering never depends on the current collector list, so old links keep working. Changing the shape → bump `v` and keep reading v1.
+- Shared links are untrusted: `parseReport` validates the shape, values render as text only (never `{@html}`), and `{#each}` over rows is never keyed by label (duplicate keys in a crafted link would throw).
+- A collector reports `null` ("Not available") when the browser does not expose a value. Never guess.
+- The share sheet needs the tap's user activation, so the link is precomputed in an `$effect`; never `await` before `navigator.share`.
 
 ## Invariants
 

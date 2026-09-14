@@ -117,6 +117,21 @@ check:
 build:
     bun run build
 
+# Redraw static/og.png from static/og.html — the png is committed, the site serves that
+[group('build')]
+og:
+    #!/usr/bin/env zsh
+    set -euo pipefail
+    "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome" \
+        --headless --disable-gpu --hide-scrollbars --allow-file-access-from-files \
+        --window-size=1200,630 --virtual-time-budget=2000 \
+        --screenshot="$PWD/static/og.png" "file://$PWD/static/og.html"
+
+# Build and publish to support-details.jurrejan.com via cdy (validates in the Caddy container, rolls back on failure)
+[group('deploy')]
+deploy *ARGS="--force": build
+    cdy site support-details build {{ ARGS }}
+
 [group('cleanup')]
 clean:
     rm -rf .svelte-kit/ build/ node_modules/.cache/
