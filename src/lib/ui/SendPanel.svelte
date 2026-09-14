@@ -1,5 +1,5 @@
 <script lang="ts">
-import { type Lang, t } from '$lib/i18n'
+import { type Lang, t } from '$lib/lang'
 import ShareGuide from './ShareGuide.svelte'
 
 type Props = { note: string; link: string; mailto: string; oncopytext: () => void; lang: Lang }

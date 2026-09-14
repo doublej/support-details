@@ -1,17 +1,23 @@
 <script lang="ts">
-import { type Lang, t } from '$lib/i18n'
+import { type Lang, t } from '$lib/lang'
+import LangPicker from './LangPicker.svelte'
 
 const AUTHOR = 'https://www.jurrejan.com'
 
-let { lang }: { lang: Lang } = $props()
+let { lang, onlang }: { lang: Lang; onlang: (lang: Lang) => void } = $props()
 </script>
 
 <footer class="credits">
   <span>{t(lang, 'Made by')} <a href={AUTHOR}>Jurre-Jan Smit</a></span>
+  <LangPicker {lang} onchange={onlang} />
 </footer>
 
 <style>
   .credits {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
     width: min(100%, 44rem);
     margin-inline: auto;
     color: var(--ink-soft);

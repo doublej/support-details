@@ -2,7 +2,7 @@
 import { onMount } from 'svelte'
 import { copyText, shareLink } from '$lib/clipboard'
 import { collectReport } from '$lib/device/collect'
-import { applyLang, fill, type Lang, parts, resolveLang, t } from '$lib/i18n'
+import { applyLang, fill, type Lang, parts, resolveLang, t } from '$lib/lang'
 import {
   decodeReport,
   encodeReport,
@@ -218,7 +218,7 @@ const copyFullText = () => copy(fullText, tr('All details copied as text.'))
       {/if}
     </nav>
   {/if}
-  <Credits {lang} />
+  <Credits {lang} onlang={(next) => (lang = next)} />
 </div>
 
 <p class="toast" class:visible={Boolean(toast)} role="status">{toast}</p>

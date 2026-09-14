@@ -1,5 +1,5 @@
 <script lang="ts">
-import { type Lang, parts, t } from '$lib/i18n'
+import { type Lang, parts, t } from '$lib/lang'
 
 // Static copy: how to send the link, and what the link does and does not contain.
 let { lang }: { lang: Lang } = $props()
