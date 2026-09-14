@@ -43,8 +43,7 @@ src/
   app.html              # HTML template
   app.css               # design tokens and shared styles
   routes/+page.svelte   # the page: own report, received report, broken link
-  lib/collect.ts        # reads the device
-  lib/ua.ts             # friendly browser, system and device names
+  lib/device/           # reads the device; friendly browser, system and device names
   lib/report.ts         # report link encoding and plain-text export
   lib/ui/               # page sections
 ```

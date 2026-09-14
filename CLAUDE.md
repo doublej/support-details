@@ -15,8 +15,12 @@ src/
 │   ├── +layout.svelte  # fonts + app.css
 │   └── +page.svelte    # modes loading / own / shared / broken; share + copy actions, dock, toast
 ├── lib/
-│   ├── collect.ts      # reads the device into a Report (browser APIs, client-only)
-│   ├── ua.ts           # user agent + Client Hints → friendly browser / system / device
+│   ├── device/         # client-only collectors → Report
+│   │   ├── collect.ts      # collectReport(): async probes in parallel, then summary + sections
+│   │   ├── sections.ts     # device, browser, screen, appearance
+│   │   ├── capabilities.ts # permissions & media, features, network, language & time (clock check = same-origin HEAD /)
+│   │   ├── probe.ts        # shared helpers: settle (1.5 s cap), media-query answers, navigator types
+│   │   └── ua.ts           # user agent + Client Hints → friendly browser / system / device
 │   ├── report.ts       # Report shape, link payload encode/decode + validation, plain-text export
 │   ├── clipboard.ts    # copy + share sheet, with fallbacks for old WebViews and plain HTTP
 │   └── ui/             # ReportView (glance + sections), SendPanel + ShareGuide (send flow), PhoneQr (desktop QR, uqr), Credits
@@ -44,7 +48,7 @@ The runtime path is `/` → `+page.svelte` reads `location.hash`: `#r=<payload>`
 
 - `vite.config.ts` builds for `safari14`, not Vite's default Safari 16.4: support is often asked about old phones.
 - `src/app.html` holds `#fallback`, an ES5 script that shows the user agent and screen size after 5 s. `+page.svelte` removes the element on mount, so it only appears where the app never booted. Keep that script ES5 (Biome wants arrow functions; the `biome-ignore` stays).
-- The fixed bottom `.dock` always holds `Credits` (jurrejan.com + GitHub); action buttons join it in the own and shared views.
+- The fixed bottom `.dock` always holds `Credits` (jurrejan.com only; the GitHub link was removed on request); action buttons join it in the own and shared views.
 
 ## Invariants
 

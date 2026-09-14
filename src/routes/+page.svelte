@@ -1,7 +1,7 @@
 <script lang="ts">
 import { onMount } from 'svelte'
 import { copyText, shareLink } from '$lib/clipboard'
-import { collectReport } from '$lib/collect'
+import { collectReport } from '$lib/device/collect'
 import { decodeReport, encodeReport, HASH_KEY, type Report, reportToText } from '$lib/report'
 import Credits from '$lib/ui/Credits.svelte'
 import PhoneQr from '$lib/ui/PhoneQr.svelte'

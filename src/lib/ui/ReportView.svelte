@@ -36,13 +36,15 @@ const wrapAtSlashes = (text: string) => text.split('/').join('/​')
     <p id="copy-hint">Tap a line to copy it.</p>
   </header>
   {#each report.sections as section, index}
+    {@const found = section.rows.filter(([, value]) => value !== null)}
+    {@const missing = section.rows.filter(([, value]) => value === null).map(([label]) => label)}
     <details class="section rise" style:--i={index + 3} open>
       <summary>
         <span>{section.title}</span>
         <span class="count">{section.rows.length}<span class="visually-hidden"> lines</span></span>
       </summary>
       <ul>
-        {#each section.rows as [label, value]}
+        {#each found as [label, value]}
           <li>
             <button
               type="button"
@@ -51,16 +53,26 @@ const wrapAtSlashes = (text: string) => text.split('/').join('/​')
               onclick={() => oncopy(label, value ?? NOT_AVAILABLE)}
             >
               <span class="label">{label}</span>
-              <span class="value" class:missing={value === null}>{value ?? NOT_AVAILABLE}</span>
+              <span class="value">{value}</span>
             </button>
           </li>
         {/each}
       </ul>
+      <!-- One quiet line instead of a column of "Not available": on iPhone that is a third of the rows. -->
+      {#if missing.length > 0}
+        <p class="missing-note">Not available in this browser: {missing.join(', ')}.</p>
+      {/if}
     </details>
   {/each}
 </section>
 
 <style>
+  .missing-note {
+    margin: -0.5rem 0 1rem;
+    color: var(--ink-faint);
+    font-size: 0.85rem;
+  }
+
   .glance {
     position: relative;
     padding: 1.25rem 1.25rem 1.75rem;
