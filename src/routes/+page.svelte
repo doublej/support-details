@@ -3,6 +3,8 @@ import { onMount } from 'svelte'
 import { copyText, shareLink } from '$lib/clipboard'
 import { collectReport } from '$lib/collect'
 import { decodeReport, encodeReport, HASH_KEY, type Report, reportToText } from '$lib/report'
+import Credits from '$lib/ui/Credits.svelte'
+import PhoneQr from '$lib/ui/PhoneQr.svelte'
 import ReportView from '$lib/ui/ReportView.svelte'
 import SendPanel from '$lib/ui/SendPanel.svelte'
 
@@ -13,6 +15,7 @@ let mode = $state<'loading' | 'own' | 'shared' | 'broken'>('loading')
 let report = $state.raw<Report | null>(null)
 let note = $state('')
 let link = $state('')
+let home = $state('')
 let toast = $state('')
 let toastTimer: ReturnType<typeof setTimeout> | undefined
 
@@ -39,11 +42,12 @@ async function load() {
   }
   // Chat apps sometimes cut long links short, so a link that won't decode is an expected state.
   report = await decodeReport(payload).catch(() => null)
-  mode = report ? 'shared' : 'broken'
   link = location.href
+  mode = report ? 'shared' : 'broken'
 }
 
 onMount(() => {
+  home = `${location.origin}/`
   load()
   window.addEventListener('hashchange', load)
   return () => window.removeEventListener('hashchange', load)
@@ -119,6 +123,12 @@ const copyRow = (label: string, value: string) => copy(`${label}: ${value}`, `Co
       </p>
     </section>
 
+    <PhoneQr
+      url={home}
+      title="Need the details of your phone instead?"
+      body="Point your phone’s camera at this code. The page opens on the phone and reads that phone."
+    />
+
     <ReportView {report} oncopy={copyRow}>
       <SendPanel bind:note {link} {mailto} oncopytext={() => copy(fullText, TEXT_COPIED)} />
     </ReportView>
@@ -137,6 +147,12 @@ const copyRow = (label: string, value: string) => copy(`${label}: ${value}`, `Co
       {/if}
     </section>
 
+    <PhoneQr
+      url={link}
+      title="Open this report on your phone"
+      body="Point your phone’s camera at this code to take these details with you."
+    />
+
     <ReportView {report} oncopy={copyRow}>
       <div class="actions rise" style:--i={1}>
         <button
@@ -152,6 +168,8 @@ const copyRow = (label: string, value: string) => copy(`${label}: ${value}`, `Co
       </div>
     </ReportView>
   {/if}
+
+  <Credits />
 </main>
 
 {#if mode === 'own' || mode === 'shared'}
@@ -182,7 +200,7 @@ const copyRow = (label: string, value: string) => copy(`${label}: ${value}`, `Co
     gap: 1.75rem;
     width: min(100% - 2.5rem, 44rem);
     margin-inline: auto;
-    padding-block: max(1.25rem, env(safe-area-inset-top)) calc(8rem + env(safe-area-inset-bottom));
+    padding-block: max(1.25rem, env(safe-area-inset-top)) calc(6.5rem + env(safe-area-inset-bottom));
   }
 
   .masthead {
@@ -251,48 +269,5 @@ const copyRow = (label: string, value: string) => copy(`${label}: ${value}`, `Co
   .note .eyebrow {
     display: block;
     margin-bottom: 0.25rem;
-  }
-
-  .dock {
-    position: fixed;
-    inset: auto 0 0;
-    z-index: 10;
-    padding: 0.75rem max(1.25rem, env(safe-area-inset-right))
-      calc(0.75rem + env(safe-area-inset-bottom)) max(1.25rem, env(safe-area-inset-left));
-    border-top: 1px solid var(--rule);
-    background: var(--paper-glass);
-    -webkit-backdrop-filter: blur(14px);
-    backdrop-filter: blur(14px);
-  }
-
-  .dock .actions {
-    grid-template-columns: 1fr 1fr;
-    width: min(100%, 44rem);
-    margin-inline: auto;
-  }
-
-  .toast {
-    position: fixed;
-    bottom: calc(5.75rem + env(safe-area-inset-bottom));
-    left: 50%;
-    z-index: 20;
-    width: max-content;
-    max-width: calc(100% - 2.5rem);
-    padding: 0.7rem 1rem;
-    border-radius: 12px;
-    background: var(--ink);
-    color: var(--paper);
-    font-size: 0.95rem;
-    opacity: 0;
-    pointer-events: none;
-    transform: translate(-50%, 0.75rem);
-    transition:
-      opacity 0.2s,
-      transform 0.25s var(--ease);
-  }
-
-  .toast.visible {
-    opacity: 1;
-    transform: translate(-50%, 0);
   }
 </style>

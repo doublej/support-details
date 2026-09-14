@@ -19,8 +19,8 @@ src/
 │   ├── ua.ts           # user agent + Client Hints → friendly browser / system / device
 │   ├── report.ts       # Report shape, link payload encode/decode + validation, plain-text export
 │   ├── clipboard.ts    # copy + share sheet, with fallbacks for old WebViews and plain HTTP
-│   └── ui/             # ReportView (glance card + sections), ShareGuide (send instructions)
-├── app.css             # tokens (paper / ink / carbon blue), buttons, fields, .rise stagger
+│   └── ui/             # ReportView (glance + sections), SendPanel + ShareGuide (send flow), PhoneQr (desktop QR, uqr), Credits
+├── app.css             # tokens (paper / ink / carbon blue), buttons, fields, dock, toast, .rise stagger
 └── app.html            # HTML shell, OG + theme-color meta
 static/og.html          # social preview source → `just og` renders static/og.png
 svelte.config.js        # SvelteKit + adapter config
