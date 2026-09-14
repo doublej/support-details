@@ -1,6 +1,6 @@
 <script lang="ts">
 import type { Snippet } from 'svelte'
-import { fill, type Lang, t } from '$lib/i18n'
+import { fill, type Lang, t } from '$lib/lang'
 import { NOT_AVAILABLE, type Report } from '$lib/report'
 
 type Props = {

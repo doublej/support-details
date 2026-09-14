@@ -1,4 +1,4 @@
-import { fill, type Lang, t } from './i18n'
+import { fill, type Lang, t } from './lang'
 import { FIRST_TOKEN, packReport, unpackReport } from './link/compact'
 import { fromCoded, fromWire, toCoded } from './link/wire'
 

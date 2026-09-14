@@ -2,6 +2,7 @@ import { ar } from './i18n/ar'
 import { es } from './i18n/es'
 import { fr } from './i18n/fr'
 import { hi } from './i18n/hi'
+import { nl } from './i18n/nl'
 import { zh } from './i18n/zh'
 
 // Every user-facing string, in English: page copy, report labels, section titles and every
@@ -278,54 +279,36 @@ export const KEYS = [
   '12,34,567.89',
   // Missing values.
   'Not available',
+  // Language picker: the label is translated, the native names map to themselves.
+  'Language',
+  'English',
+  '中文',
+  'हिन्दी',
+  'Español',
+  'العربية',
+  'Français',
+  'Nederlands',
 ] as const
 
 export type Key = (typeof KEYS)[number]
-export type Lang = 'en' | 'zh' | 'hi' | 'es' | 'ar' | 'fr'
+export type Lang = 'en' | 'zh' | 'hi' | 'es' | 'ar' | 'fr' | 'nl'
 
-const DICTS: Record<Exclude<Lang, 'en'>, Record<Key, string>> = { zh, hi, es, ar, fr }
-
-/** First navigator language whose base subtag we translate, else English. */
-export function pickLanguage(tags: readonly string[] | undefined): Lang {
-  for (const tag of tags ?? []) {
-    const base = tag.split('-')[0]?.toLowerCase()
-    if (base === 'zh' || base === 'hi' || base === 'es' || base === 'ar' || base === 'fr') {
-      return base
-    }
-  }
-  return 'en'
+export const LANG_OPTIONS: Lang[] = ['en', 'zh', 'hi', 'es', 'ar', 'fr', 'nl']
+export const LANG_LABELS: Record<Lang, string> = {
+  en: 'English',
+  zh: '中文',
+  hi: 'हिन्दी',
+  es: 'Español',
+  ar: 'العربية',
+  fr: 'Français',
+  nl: 'Nederlands',
 }
 
-/** Browser-only: the page is prerendered, so navigator may not exist. Defaults to English. */
-export function currentLang(): Lang {
-  if (typeof navigator === 'undefined') return 'en'
-  return pickLanguage(navigator.languages ?? [navigator.language])
-}
-
-/** Translate a key; unknown keys (free-text values, crafted labels) pass through. */
-export function t(lang: Lang, key: string): string {
-  if (lang === 'en') return key
-  return DICTS[lang][key as Key] ?? key
-}
-
-/** Fill {placeholders} in a translated template. */
-export function fill(template: string, vars: Record<string, string>): string {
-  let out = template
-  for (const [name, value] of Object.entries(vars)) out = out.split(`{${name}}`).join(value)
-  return out
-}
-
-/** Split a translated template around one {placeholder} so markup can wrap the value. */
-export function parts(template: string, name: string): [before: string, after: string] {
-  const marker = `{${name}}`
-  const at = template.indexOf(marker)
-  return at < 0 ? [template, ''] : [template.slice(0, at), template.slice(at + marker.length)]
-}
-
-/** Set the page language; only Arabic flips the direction. Browser-only. */
-export function applyLang(lang: Lang): void {
-  const root = document.documentElement
-  root.lang = lang
-  if (lang === 'ar') root.dir = 'rtl'
-  else root.removeAttribute('dir')
+export const DICTS: Record<Exclude<Lang, 'en'>, Record<Key, string>> = {
+  zh,
+  hi,
+  es,
+  ar,
+  fr,
+  nl,
 }

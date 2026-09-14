@@ -272,4 +272,12 @@ export const hi: Record<Key, string> = {
   '1’234’567.89': '1’234’567.89',
   '12,34,567.89': '12,34,567.89',
   'Not available': 'उपलब्ध नहीं',
+  Language: 'भाषा',
+  English: 'English',
+  中文: '中文',
+  हिन्दी: 'हिन्दी',
+  Español: 'Español',
+  العربية: 'العربية',
+  Français: 'Français',
+  Nederlands: 'Nederlands',
 }

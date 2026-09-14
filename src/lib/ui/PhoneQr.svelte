@@ -1,6 +1,6 @@
 <script lang="ts">
 import { encode } from 'uqr'
-import { type Lang, t } from '$lib/i18n'
+import { type Lang, t } from '$lib/lang'
 
 type Props = { url: string; title: string; body: string; lang: Lang }
 

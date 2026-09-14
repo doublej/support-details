@@ -2,7 +2,7 @@
 import { onMount } from 'svelte'
 import { copyText, shareLink } from '$lib/clipboard'
 import { collectReport } from '$lib/device/collect'
-import { applyLang, currentLang, fill, type Lang, parts, t } from '$lib/i18n'
+import { applyLang, fill, type Lang, parts, resolveLang, t } from '$lib/lang'
 import {
   decodeReport,
   encodeReport,
@@ -61,8 +61,9 @@ onMount(() => {
   // The app runs, so the ES5 fallback for very old browsers in app.html can go.
   document.getElementById('fallback')?.remove()
   // Decide the language before the own/shared view renders. The page is prerendered in
-  // English; this swaps it to the visitor's language on first mount.
-  lang = currentLang()
+  // English; this swaps it to the visitor's language on first mount. A ?lang= override wins
+  // once and is then stripped, so the link stays language-neutral.
+  lang = resolveLang()
   applyLang(lang)
   home = `${location.origin}/`
   load()
@@ -217,7 +218,7 @@ const copyFullText = () => copy(fullText, tr('All details copied as text.'))
       {/if}
     </nav>
   {/if}
-  <Credits {lang} />
+  <Credits {lang} onlang={(next) => (lang = next)} />
 </div>
 
 <p class="toast" class:visible={Boolean(toast)} role="status">{toast}</p>

@@ -273,4 +273,12 @@ export const ar: Record<Key, string> = {
   '1’234’567.89': '1’234’567.89',
   '12,34,567.89': '12,34,567.89',
   'Not available': 'غير متوفر',
+  Language: 'اللغة',
+  English: 'English',
+  中文: '中文',
+  हिन्दी: 'हिन्दी',
+  Español: 'Español',
+  العربية: 'العربية',
+  Français: 'Français',
+  Nederlands: 'Nederlands',
 }
