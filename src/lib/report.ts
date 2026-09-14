@@ -1,6 +1,8 @@
+import { packReport, unpackReport } from './compact'
+
 /**
- * A captured device report. Labels travel with their values, so a link made by an older build
- * still renders after the collectors change. Change the shape → bump `v` and keep reading v1.
+ * A captured device report. Links carry it in the compact format of compact.ts. Change the shape
+ * → bump `v` and keep reading v1.
  */
 export type Row = [label: string, value: string | null]
 export type Section = { title: string; rows: Row[] }
@@ -9,19 +11,31 @@ export type Report = { v: 1; at: string; note: string; summary: Row[]; sections:
 export const HASH_KEY = '#r='
 export const NOT_AVAILABLE = 'Not available'
 
-// Payload = format flag + base64url. 'z' is deflated JSON; 'j' is plain JSON for browsers
-// without CompressionStream (Safari before 16.4), whose links are just longer.
+// Payload = format flag + base64url. 'c' is the compact form deflated; 'p' is the compact form
+// plain, for browsers without CompressionStream (Safari before 16.4). 'z' (deflated) and 'j'
+// (plain) are the older self-describing JSON links: still read, no longer written.
+const FORMATS: Record<string, { compression?: CompressionFormat; compact: boolean }> = {
+  c: { compression: 'deflate-raw', compact: true },
+  p: { compact: true },
+  z: { compression: 'deflate', compact: false },
+  j: { compact: false },
+}
+
 export async function encodeReport(report: Report): Promise<string> {
-  const json = new TextEncoder().encode(JSON.stringify(report))
-  if (typeof CompressionStream === 'undefined') return `j${toBase64Url(json)}`
-  return `z${toBase64Url(await transform(json, new CompressionStream('deflate')))}`
+  const json = new TextEncoder().encode(JSON.stringify(packReport(report)))
+  if (typeof CompressionStream === 'undefined') return `p${toBase64Url(json)}`
+  return `c${toBase64Url(await transform(json, new CompressionStream('deflate-raw')))}`
 }
 
 export async function decodeReport(payload: string): Promise<Report> {
+  const format = FORMATS[payload[0]]
+  if (!format) throw new Error('Not a device report')
   const bytes = fromBase64Url(payload.slice(1))
-  const json =
-    payload[0] === 'z' ? await transform(bytes, new DecompressionStream('deflate')) : bytes
-  return parseReport(new TextDecoder().decode(json))
+  const json = format.compression
+    ? await transform(bytes, new DecompressionStream(format.compression))
+    : bytes
+  const data = JSON.parse(new TextDecoder().decode(json))
+  return parseReport(format.compact ? unpackReport(data) : data)
 }
 
 export function reportToText(report: Report, link = '', full = true): string {
@@ -68,8 +82,8 @@ const isRows = (rows: unknown): rows is Row[] =>
   )
 
 // A shared link is untrusted input: check the whole shape before anything renders it.
-function parseReport(text: string): Report {
-  const data = JSON.parse(text)
+// biome-ignore lint/suspicious/noExplicitAny: parsed link JSON, checked field by field below
+function parseReport(data: any): Report {
   const sectionsOk =
     Array.isArray(data?.sections) &&
     data.sections.every(

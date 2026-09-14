@@ -11,6 +11,10 @@ const SAMSUNG =
   'Mozilla/5.0 (Linux; Android 13; SM-S911B) AppleWebKit/537.36 (KHTML, like Gecko) SamsungBrowser/23.0 Chrome/115.0.0.0 Mobile Safari/537.36'
 const INSTAGRAM =
   'Mozilla/5.0 (iPhone; CPU iPhone OS 17_4 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148 Instagram 312.0.0.32.112 (iPhone15,2; iOS 17_4; en_US; en; scale=3.00; 1179x2556; 556020187)'
+const IOS_WEBVIEW =
+  'Mozilla/5.0 (iPhone; CPU iPhone OS 17_4 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148'
+const CHROME_IOS =
+  'Mozilla/5.0 (iPhone; CPU iPhone OS 17_4 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) CriOS/126.0.6478.54 Mobile/15E148 Safari/604.1'
 const WINDOWS_EDGE =
   'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36 Edg/126.0.0.0'
 const LINUX_FIREFOX = 'Mozilla/5.0 (X11; Linux x86_64; rv:128.0) Gecko/20100101 Firefox/128.0'
@@ -46,6 +50,18 @@ const cases: [name: string, ua: string, touchPoints: number, expected: Platform]
     INSTAGRAM,
     5,
     { browser: 'Instagram in-app browser 312.0.0.32.112', os: 'iOS 17.4', device: 'iPhone' },
+  ],
+  [
+    'iOS app web view without a Safari token',
+    IOS_WEBVIEW,
+    5,
+    { browser: 'In-app browser', os: 'iOS 17.4', device: 'iPhone' },
+  ],
+  [
+    'Chrome on iPhone stays Chrome',
+    CHROME_IOS,
+    5,
+    { browser: 'Chrome 126.0.6478.54', os: 'iOS 17.4', device: 'iPhone' },
   ],
   [
     'Windows Edge',

@@ -18,6 +18,8 @@ const BROWSERS: Rule[] = [
   ['Firefox', /(?:Firefox|FxiOS)\/([\d.]+)/],
   ['Chrome', /(?:Chrome|CriOS)\/([\d.]+)/],
   ['Safari', /Version\/([\d.]+).*Safari/],
+  // WKWebView apps (WhatsApp, Gmail, LinkedIn, X) drop the Safari token entirely.
+  ['In-app browser', /(?:iPhone|iPad|iPod)(?!.*Safari).*AppleWebKit/],
 ]
 
 // Android before Linux and iOS before macOS: their user agents contain both names.

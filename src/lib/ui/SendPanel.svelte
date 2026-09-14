@@ -18,15 +18,21 @@ let { note = $bindable(), link, mailto, oncopytext }: Props = $props()
       placeholder="Your name, ticket number, or what went wrong"
     />
   </label>
-  <div class="actions">
-    <button class="button" type="button" onclick={oncopytext}>Copy as text</button>
-    <a class="button" href={mailto}>Email it</a>
-  </div>
-  <label class="field">
-    <span>Your link</span>
-    <input class="link" readonly value={link} onfocus={(event) => event.currentTarget.select()} />
-  </label>
   <ShareGuide />
+  <!-- The dock covers the common case; the other ways stay one tap away. -->
+  <details class="more">
+    <summary>Other ways to send</summary>
+    <div class="more-body">
+      <div class="actions">
+        <button class="button" type="button" onclick={oncopytext}>Copy as text</button>
+        <a class="button" href={mailto}>Email it</a>
+      </div>
+      <label class="field">
+        <span>Your link</span>
+        <input class="link" readonly value={link} onfocus={(event) => event.currentTarget.select()} />
+      </label>
+    </div>
+  </details>
 </section>
 
 <style>
@@ -36,6 +42,26 @@ let { note = $bindable(), link, mailto, oncopytext }: Props = $props()
     padding: 1.25rem;
     border: 1.5px solid var(--ink);
     border-radius: var(--radius);
+  }
+
+  .more {
+    border-top: 1px dashed var(--rule);
+  }
+
+  .more summary {
+    display: flex;
+    align-items: center;
+    min-height: 2.75rem;
+    padding-top: 0.5rem;
+    color: var(--carbon);
+    font-weight: 600;
+    cursor: pointer;
+  }
+
+  .more-body {
+    display: grid;
+    gap: 1rem;
+    padding-top: 0.75rem;
   }
 
   .field .link {

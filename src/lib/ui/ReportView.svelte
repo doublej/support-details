@@ -10,6 +10,9 @@ type Props = {
 }
 
 let { report, oncopy, children }: Props = $props()
+
+// A zero-width space after each "/" lets "Europe/Amsterdam" wrap at the slash, not mid-word.
+const wrapAtSlashes = (text: string) => text.split('/').join('/​')
 </script>
 
 <section class="glance rise" aria-labelledby="glance-title">
@@ -18,7 +21,7 @@ let { report, oncopy, children }: Props = $props()
     {#each report.summary as [label, value]}
       <div class="glance-row">
         <dt>{label}</dt>
-        <dd class:missing={value === null}>{value ?? NOT_AVAILABLE}</dd>
+        <dd class:missing={value === null}>{value === null ? NOT_AVAILABLE : wrapAtSlashes(value)}</dd>
       </div>
     {/each}
   </dl>
@@ -30,45 +33,74 @@ let { report, oncopy, children }: Props = $props()
 <section class="details" aria-labelledby="details-title">
   <header class="rise" style:--i={2}>
     <h2 id="details-title">All details</h2>
-    <p>Tap a line to copy it.</p>
+    <p id="copy-hint">Tap a line to copy it.</p>
   </header>
   {#each report.sections as section, index}
+    {@const found = section.rows.filter(([, value]) => value !== null)}
+    {@const missing = section.rows.filter(([, value]) => value === null).map(([label]) => label)}
     <details class="section rise" style:--i={index + 3} open>
       <summary>
         <span>{section.title}</span>
-        <span class="count">{section.rows.length}</span>
+        <span class="count">{section.rows.length}<span class="visually-hidden"> lines</span></span>
       </summary>
       <ul>
-        {#each section.rows as [label, value]}
+        {#each found as [label, value]}
           <li>
-            <button type="button" class="row" onclick={() => oncopy(label, value ?? NOT_AVAILABLE)}>
+            <button
+              type="button"
+              class="row"
+              aria-describedby="copy-hint"
+              onclick={() => oncopy(label, value ?? NOT_AVAILABLE)}
+            >
               <span class="label">{label}</span>
-              <span class="value" class:missing={value === null}>{value ?? NOT_AVAILABLE}</span>
+              <span class="value">{value}</span>
             </button>
           </li>
         {/each}
       </ul>
+      <!-- One quiet line instead of a column of "Not available": on iPhone that is a third of the rows. -->
+      {#if missing.length > 0}
+        <p class="missing-note">Not available in this browser: {missing.join(', ')}.</p>
+      {/if}
     </details>
   {/each}
 </section>
 
 <style>
-  .glance {
-    position: relative;
-    padding: 1.25rem 1.25rem 1.75rem;
-    border-radius: var(--radius);
-    background: var(--card);
-    box-shadow: var(--shadow);
+  .missing-note {
+    margin: -0.5rem 0 1rem;
+    color: var(--ink-faint);
+    font-size: 0.85rem;
   }
 
-  /* Perforated tear-off edge, punched in the page colour. */
-  .glance::after {
+  /* drop-shadow follows the notched outline below; box-shadow would stay a rectangle under the holes. */
+  .glance {
+    position: relative;
+    isolation: isolate;
+    padding: 1.25rem 1.25rem 1.75rem;
+    filter: drop-shadow(0 1px 0 rgb(28 27 23 / 6%)) drop-shadow(0 12px 14px rgb(28 27 23 / 14%));
+  }
+
+  @media (prefers-color-scheme: dark) {
+    .glance {
+      filter: drop-shadow(0 1px 0 rgb(0 0 0 / 30%)) drop-shadow(0 14px 18px rgb(0 0 0 / 45%));
+    }
+  }
+
+  /* The ticket: a body mask plus an SVG tile of half-round notches along the torn bottom edge. The
+     notches are real holes, so the page and the shadow show through. Tiles round to whole notches.
+     The body overlaps the tile by 1px so no seam shows. Browsers without mask get a plain card. */
+  .glance::before {
     content: '';
     position: absolute;
-    inset: auto 0 -6px;
-    height: 12px;
-    background: radial-gradient(circle at 8px 6px, var(--paper) 5px, transparent 5.5px) 0 0 / 16px
-      12px repeat-x;
+    inset: 0;
+    z-index: -1;
+    border-radius: var(--radius) var(--radius) 0 0;
+    background: var(--card);
+    mask:
+      linear-gradient(#000 0 0) top / 100% calc(100% - 7px) no-repeat,
+      url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='8'%3E%3Cpath d='M0 0h16v8h-3a5 5 0 0 0-10 0H0z'/%3E%3C/svg%3E")
+        bottom / 16px 8px round no-repeat;
   }
 
   dl {

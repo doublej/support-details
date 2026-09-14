@@ -29,7 +29,10 @@
         It holds what you see on this page: device, browser, screen and settings. Every website you
         visit can already read these.
       </li>
-      <li>No name (unless you add one in the note), no location, no IP address, no photos, no passwords.</li>
+      <li>
+        No name (unless you add one in the note), no exact location (only your time zone and
+        language), no IP address, no photos, no passwords.
+      </li>
       <li>Anyone who has the link can read it, so send it only to the person helping you.</li>
     </ul>
   </details>
