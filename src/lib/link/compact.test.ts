@@ -1,6 +1,6 @@
 import { deflateRawSync, inflateRawSync } from 'node:zlib'
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { macReport, tokenLink } from '../fixtures'
+import { macReport, tokenLink, wireLink } from '../fixtures'
 import { decodeReport, encodeReport, type Report, type Row } from '../report'
 import { type Packed, packReport, unpackReport } from './compact'
 import { fromWire, toWire } from './wire'
@@ -109,6 +109,12 @@ describe('compact links', () => {
     expect(await decodeReport(tokenLink)).toEqual(macReport)
     const plain = inflateRawSync(Buffer.from(tokenLink.slice(1), 'base64url'))
     expect(await decodeReport(`u${plain.toString('base64url')}`)).toEqual(macReport)
+  })
+
+  it('still opens links with deflated wire bytes', async () => {
+    expect(await decodeReport(wireLink)).toEqual(macReport)
+    const plain = inflateRawSync(Buffer.from(wireLink.slice(1), 'base64url'))
+    expect(await decodeReport(`a${plain.toString('base64url')}`)).toEqual(macReport)
   })
 
   it('round-trips a full report in about a seventh of a JSON link', async () => {
