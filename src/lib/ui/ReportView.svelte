@@ -73,22 +73,34 @@ const wrapAtSlashes = (text: string) => text.split('/').join('/​')
     font-size: 0.85rem;
   }
 
+  /* drop-shadow follows the notched outline below; box-shadow would stay a rectangle under the holes. */
   .glance {
     position: relative;
+    isolation: isolate;
     padding: 1.25rem 1.25rem 1.75rem;
-    border-radius: var(--radius);
-    background: var(--card);
-    box-shadow: var(--shadow);
+    filter: drop-shadow(0 1px 0 rgb(28 27 23 / 6%)) drop-shadow(0 12px 14px rgb(28 27 23 / 14%));
   }
 
-  /* Perforated tear-off edge, punched in the page colour. */
-  .glance::after {
+  @media (prefers-color-scheme: dark) {
+    .glance {
+      filter: drop-shadow(0 1px 0 rgb(0 0 0 / 30%)) drop-shadow(0 14px 18px rgb(0 0 0 / 45%));
+    }
+  }
+
+  /* The ticket: a body mask plus an SVG tile of half-round notches along the torn bottom edge. The
+     notches are real holes, so the page and the shadow show through. Tiles round to whole notches.
+     The body overlaps the tile by 1px so no seam shows. Browsers without mask get a plain card. */
+  .glance::before {
     content: '';
     position: absolute;
-    inset: auto 0 -6px;
-    height: 12px;
-    background: radial-gradient(circle at 8px 6px, var(--paper) 5px, transparent 5.5px) 0 0 / 16px
-      12px repeat-x;
+    inset: 0;
+    z-index: -1;
+    border-radius: var(--radius) var(--radius) 0 0;
+    background: var(--card);
+    mask:
+      linear-gradient(#000 0 0) top / 100% calc(100% - 7px) no-repeat,
+      url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='8'%3E%3Cpath d='M0 0h16v8h-3a5 5 0 0 0-10 0H0z'/%3E%3C/svg%3E")
+        bottom / 16px 8px round no-repeat;
   }
 
   dl {
