@@ -1,3 +1,4 @@
+import { deflateSync } from 'node:zlib'
 import { describe, expect, it } from 'vitest'
 import { decodeReport, encodeReport, type Report, reportToText } from './report'
 
@@ -21,14 +22,20 @@ const plainPayload = (value: unknown) =>
   `j${Buffer.from(JSON.stringify(value)).toString('base64url')}`
 
 describe('report links', () => {
-  it('round-trips through a compressed, URL-safe payload', async () => {
+  it('round-trips through a compact, compressed, URL-safe payload', async () => {
     const payload = await encodeReport(report)
-    expect(payload).toMatch(/^z[\w-]+$/)
+    expect(payload).toMatch(/^c[\w-]+$/)
     expect(await decodeReport(payload)).toEqual(report)
   })
 
-  it('reads the uncompressed fallback format', async () => {
+  it('still opens the older self-describing links', async () => {
+    const deflated = `z${deflateSync(JSON.stringify(report)).toString('base64url')}`
+    expect(await decodeReport(deflated)).toEqual(report)
     expect(await decodeReport(plainPayload(report))).toEqual(report)
+  })
+
+  it('rejects unknown formats', async () => {
+    await expect(decodeReport('x123')).rejects.toThrow('Not a device report')
   })
 
   it('rejects links that were cut short', async () => {

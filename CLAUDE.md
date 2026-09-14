@@ -22,6 +22,8 @@ src/
 │   │   ├── probe.ts        # shared helpers: settle (1.5 s cap), media-query answers, navigator types
 │   │   └── ua.ts           # user agent + Client Hints → friendly browser / system / device
 │   ├── report.ts       # Report shape, link payload encode/decode + validation, plain-text export
+│   ├── compact.ts      # compact link format: append-only label / common value / text fragment tables
+│   ├── fixtures.ts     # a full Mac Chrome report for link format tests
 │   ├── clipboard.ts    # copy + share sheet, with fallbacks for old WebViews and plain HTTP
 │   └── ui/             # ReportView (glance + sections), SendPanel + ShareGuide (send flow), PhoneQr (desktop QR, uqr), Credits
 ├── app.css             # tokens (paper / ink / carbon blue), buttons, fields, dock, toast, .rise stagger
@@ -38,8 +40,9 @@ The runtime path is `/` → `+page.svelte` reads `location.hash`: `#r=<payload>`
 
 ## Report links
 
-- The report lives in the URL fragment (`/#r=<payload>`), so it never reaches the server and there is no backend. Payload = format flag + base64url: `z` deflated JSON, `j` plain JSON for browsers without `CompressionStream`.
-- Reports are self-describing (labels travel with values). Rendering never depends on the current collector list, so old links keep working. Changing the shape → bump `v` and keep reading v1.
+- The report lives in the URL fragment (`/#r=<payload>`), so it never reaches the server and there is no backend. Payload = format flag + base64url: `c` compact + deflate-raw, `p` compact plain for browsers without `CompressionStream`. `z` (deflated JSON) and `j` (plain JSON) are the older self-describing links: still read, never written.
+- Compact links carry values only, about a third of a JSON link. Labels, common values and text fragments (swapped for private-use characters before deflate) live in `src/lib/compact.ts`, and links already sent index into them: **those lists are append-only**. A new collector row → a new group at the end of `GROUPS`; until then it travels verbatim in `extras` and the dev console warns. Never edit `FROZEN` in `compact.test.ts` to make a test pass.
+- Changing the in-memory `Report` shape → bump `v` and keep reading v1.
 - Shared links are untrusted: `parseReport` validates the shape, values render as text only (never `{@html}`), and `{#each}` over rows is never keyed by label (duplicate keys in a crafted link would throw).
 - A collector reports `null` ("Not available") when the browser does not expose a value. Never guess.
 - The share sheet needs the tap's user activation, so the link is precomputed in an `$effect`; never `await` before `navigator.share`.
