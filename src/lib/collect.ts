@@ -46,10 +46,18 @@ const preference = (feature: string, on: string, off: string) =>
     [`(${feature}: ${off})`, 'No'],
   ])
 
+// Optional async APIs can reject (permissions policy, private mode) or never settle in some
+// browsers. None may hold up the page, so each gets 1.5 s and then counts as not available.
+function settle<T>(promise: Promise<T> | undefined): Promise<T | null> {
+  if (!promise) return Promise.resolve(null)
+  const timeout = new Promise<null>((resolve) => setTimeout(() => resolve(null), 1500))
+  return Promise.race([promise.catch(() => null), timeout])
+}
+
 async function readBattery(nav: Nav): Promise<string | null> {
-  if (!nav.getBattery) return null
-  const { level, charging } = await nav.getBattery()
-  return `${Math.round(level * 100)}%${charging ? ', charging' : ''}`
+  const battery = await settle(nav.getBattery?.())
+  if (!battery) return null
+  return `${Math.round(battery.level * 100)}%${battery.charging ? ', charging' : ''}`
 }
 
 function deviceSection(nav: Nav, hints: HighEntropy, battery: string | null): Section {
@@ -164,8 +172,7 @@ function localStorageStatus(): string {
   }
 }
 
-async function featuresSection(nav: Nav): Promise<Section> {
-  const storage = await nav.storage?.estimate?.()
+function featuresSection(nav: Nav, storage: StorageEstimate | null): Section {
   const notifications = 'Notification' in window ? PERMISSIONS[Notification.permission] : undefined
   return {
     title: 'Browser features',
@@ -236,7 +243,12 @@ function localeSection(nav: Nav, now: Date): Section {
 export async function collectReport(): Promise<Report> {
   const nav = navigator as Nav
   const now = new Date()
-  const hints = (await nav.userAgentData?.getHighEntropyValues(HINTS)) ?? {}
+  const [settledHints, battery, storage] = await Promise.all([
+    settle(nav.userAgentData?.getHighEntropyValues(HINTS)),
+    readBattery(nav),
+    settle(nav.storage?.estimate?.()),
+  ])
+  const hints = settledHints ?? {}
   const platform = refineWithHints(parseUserAgent(nav.userAgent, nav.maxTouchPoints), hints)
   return {
     v: 1,
@@ -250,11 +262,11 @@ export async function collectReport(): Promise<Report> {
       ['Time zone', Intl.DateTimeFormat().resolvedOptions().timeZone || null],
     ],
     sections: [
-      deviceSection(nav, hints, await readBattery(nav)),
+      deviceSection(nav, hints, battery),
       browserSection(nav, hints),
       screenSection(),
       appearanceSection(),
-      await featuresSection(nav),
+      featuresSection(nav, storage),
       networkSection(nav),
       localeSection(nav, now),
     ],
