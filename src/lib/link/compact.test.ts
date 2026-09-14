@@ -1,8 +1,9 @@
-import { deflateRawSync } from 'node:zlib'
+import { deflateRawSync, inflateRawSync } from 'node:zlib'
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { macReport } from '../fixtures'
+import { macReport, tokenLink } from '../fixtures'
 import { decodeReport, encodeReport, type Report, type Row } from '../report'
 import { type Packed, packReport, unpackReport } from './compact'
+import { fromWire, toWire } from './wire'
 
 // macReport packed exactly as the first compact release wrote it. If this test fails, a list in
 // compact.ts was reordered, shortened or reworded, and links people already sent now show wrong
@@ -104,17 +105,24 @@ describe('compact links', () => {
     expect(await decodeReport(`p${Buffer.from(json).toString('base64url')}`)).toEqual(macReport)
   })
 
-  it('round-trips a full report in about a sixth of a JSON link', async () => {
+  it('still opens links with JSON in token bytes', async () => {
+    expect(await decodeReport(tokenLink)).toEqual(macReport)
+    const plain = inflateRawSync(Buffer.from(tokenLink.slice(1), 'base64url'))
+    expect(await decodeReport(`u${plain.toString('base64url')}`)).toEqual(macReport)
+  })
+
+  it('round-trips a full report in about a seventh of a JSON link', async () => {
     const payload = await encodeReport(macReport)
-    expect(payload).toMatch(/^t[\w-]+$/)
-    expect(payload.length).toBeLessThan(320)
+    expect(payload).toMatch(/^b[\w-]+$/)
+    expect(payload.length).toBeLessThan(260)
     expect(await decodeReport(payload)).toEqual(macReport)
   })
 
-  it('falls back to plain token bytes without CompressionStream', async () => {
+  it('falls back to plain wire bytes without CompressionStream', async () => {
     vi.stubGlobal('CompressionStream', undefined)
     const payload = await encodeReport(macReport)
-    expect(payload).toMatch(/^u[\w-]+$/)
+    expect(payload).toMatch(/^a[\w-]+$/)
+    expect(payload.length).toBeLessThan(300)
     expect(await decodeReport(payload)).toEqual(macReport)
   })
 
@@ -136,7 +144,7 @@ describe('compact links', () => {
     expect(() => unpackReport(['0', '', ['\uE07F']])).toThrow('Not a device report')
   })
 
-  it('keeps private-use text in place and sends unknown rows verbatim', () => {
+  it('keeps private-use text in place and sends unknown rows verbatim', async () => {
     const report: Report = {
       ...macReport,
       summary: [['Device', '\uF8FF Mac'], ...macReport.summary.slice(1)],
@@ -146,6 +154,7 @@ describe('compact links', () => {
     expect(packed[2][0]).toEqual(['\uF8FF Mac'])
     expect(packed[3]).toEqual([['Later', 'New row', 'as sent']])
     expect(unpackReport(packed)).toEqual(report)
+    expect(await decodeReport(await encodeReport(report))).toEqual(report)
   })
 
   it('rejects values outside the tables', () => {
@@ -153,5 +162,29 @@ describe('compact links', () => {
       expect(() => unpackReport(['0', '', [value]])).toThrow('Not a device report')
     }
     expect(() => unpackReport(['0', '', [], [['a', 'b', 3]]])).toThrow('Not a device report')
+  })
+})
+
+describe('wire bytes', () => {
+  const [esc, token, privateUse] = [27, 0xe000, 0xf8ff].map((code) => String.fromCharCode(code))
+  const packed: Packed = [
+    'tlcsgj',
+    `Sam ${esc} ✓ 👋 ${token}${privateUse}`,
+    ['x'.repeat(200), 'short', 5, -1, 0, [`${token}${privateUse}`], token],
+    [
+      ['Later', 'New row', null],
+      ['Later', 'Other', 'as sent'],
+    ],
+  ]
+
+  it('round-trips every kind of value', () => {
+    expect(fromWire(toWire(packed))).toEqual(packed)
+    expect(fromWire(toWire(['0', '', []]))).toEqual(['0', '', []])
+  })
+
+  it('rejects bytes cut short or left over', () => {
+    const bytes = toWire(packed)
+    expect(() => fromWire(bytes.subarray(0, bytes.length - 1))).toThrow('Not a device report')
+    expect(() => fromWire(new Uint8Array([...bytes, 0]))).toThrow('Not a device report')
   })
 })
