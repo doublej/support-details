@@ -2,6 +2,7 @@ import { ar } from './i18n/ar'
 import { es } from './i18n/es'
 import { fr } from './i18n/fr'
 import { hi } from './i18n/hi'
+import { nl } from './i18n/nl'
 import { zh } from './i18n/zh'
 
 // Every user-facing string, in English: page copy, report labels, section titles and every
@@ -281,15 +282,22 @@ export const KEYS = [
 ] as const
 
 export type Key = (typeof KEYS)[number]
-export type Lang = 'en' | 'zh' | 'hi' | 'es' | 'ar' | 'fr'
+export type Lang = 'en' | 'zh' | 'hi' | 'es' | 'ar' | 'fr' | 'nl'
 
-const DICTS: Record<Exclude<Lang, 'en'>, Record<Key, string>> = { zh, hi, es, ar, fr }
+const DICTS: Record<Exclude<Lang, 'en'>, Record<Key, string>> = { zh, hi, es, ar, fr, nl }
 
 /** Base subtag we can render, or null. Pure. */
 export function langFromTag(tag: string): Lang | null {
   const base = tag.split('-')[0]?.toLowerCase()
   if (base === 'en') return 'en'
-  if (base === 'zh' || base === 'hi' || base === 'es' || base === 'ar' || base === 'fr') {
+  if (
+    base === 'zh' ||
+    base === 'hi' ||
+    base === 'es' ||
+    base === 'ar' ||
+    base === 'fr' ||
+    base === 'nl'
+  ) {
     return base
   }
   return null

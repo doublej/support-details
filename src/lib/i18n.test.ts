@@ -1,12 +1,13 @@
 import { describe, expect, it } from 'vitest'
-import { KEYS, type Key, langFromQuery, langFromTag, pickLanguage } from '../i18n'
-import { ar } from './ar'
-import { es } from './es'
-import { fr } from './fr'
-import { hi } from './hi'
-import { zh } from './zh'
+import { KEYS, type Key, langFromQuery, langFromTag, pickLanguage } from './i18n'
+import { ar } from './i18n/ar'
+import { es } from './i18n/es'
+import { fr } from './i18n/fr'
+import { hi } from './i18n/hi'
+import { nl } from './i18n/nl'
+import { zh } from './i18n/zh'
 
-const languages: Record<string, Record<Key, string>> = { zh, hi, es, ar, fr }
+const languages: Record<string, Record<Key, string>> = { zh, hi, es, ar, fr, nl }
 
 const placeholders = (text: string): string[] =>
   [...text.matchAll(/\{(\w+)\}/g)].map((match) => match[1]).sort()
@@ -38,6 +39,7 @@ describe('language decision', () => {
     expect(pickLanguage(['fr-FR', 'en'])).toBe('fr')
     expect(pickLanguage(['en', 'fr'])).toBe('en')
     expect(pickLanguage(['de', 'es'])).toBe('es')
+    expect(pickLanguage(['nl-NL'])).toBe('nl')
     expect(pickLanguage([])).toBe('en')
     expect(pickLanguage(undefined)).toBe('en')
   })
