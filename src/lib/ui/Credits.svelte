@@ -1,9 +1,13 @@
 <script lang="ts">
+import { type Lang, t } from '$lib/i18n'
+
 const AUTHOR = 'https://www.jurrejan.com'
+
+let { lang }: { lang: Lang } = $props()
 </script>
 
 <footer class="credits">
-  <span>Made by <a href={AUTHOR}>Jurre-Jan Smit</a></span>
+  <span>{t(lang, 'Made by')} <a href={AUTHOR}>Jurre-Jan Smit</a></span>
 </footer>
 
 <style>

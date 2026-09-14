@@ -1,39 +1,62 @@
 <script lang="ts">
+import { type Lang, parts, t } from '$lib/i18n'
+
 // Static copy: how to send the link, and what the link does and does not contain.
+let { lang }: { lang: Lang } = $props()
+
+const tr = (key: string): string => t(lang, key)
+const aside = $derived(
+  parts(
+    tr(
+      'No share menu, or nothing happens? Tap {copyLink}. Then press and hold in the message box and choose {paste}. On a computer, click in the message box and press Ctrl+V (⌘V on a Mac).',
+    ),
+    'copyLink',
+  ),
+)
+const paste = $derived(parts(aside[1], 'paste'))
 </script>
 
 <section class="guide" aria-labelledby="guide-title">
-  <h3 id="guide-title">How to send it</h3>
+  <h3 id="guide-title">{tr('How to send it')}</h3>
   <ol class="steps">
     <li>
-      <span><strong>Tap “Share link”</strong> at the bottom of the screen. Your phone opens its share menu.</span>
+      <span
+        ><strong>{tr('Tap “Share link”')}</strong>
+        {tr('at the bottom of the screen. Your phone opens its share menu.')}</span
+      >
     </li>
     <li>
-      <span><strong>Pick the app you are talking in</strong>, like WhatsApp, Messages, Mail, Teams or Slack.</span>
+      <span
+        ><strong>{tr('Pick the app you are talking in')}</strong
+        >{tr(', like WhatsApp, Messages, Mail, Teams or Slack.')}</span
+      >
     </li>
     <li>
-      <span><strong>Send it.</strong> When they open the link, they see this page with your details filled in.</span>
+      <span
+        ><strong>{tr('Send it.')}</strong>
+        {tr('When they open the link, they see this page with your details filled in.')}</span
+      >
     </li>
   </ol>
   <p class="aside">
-    No share menu, or nothing happens? Tap <strong>Copy link</strong>. Then press and hold in the
-    message box and choose <strong>Paste</strong>. On a computer, click in the message box and press
-    Ctrl+V (⌘V on a Mac).
+    {aside[0]}<strong>{tr('Copy link')}</strong>{paste[0]}<strong>{tr('Paste')}</strong>{paste[1]}
   </p>
 
   <details class="privacy">
-    <summary>What is in the link, and is it safe?</summary>
+    <summary>{tr('What is in the link, and is it safe?')}</summary>
     <ul>
-      <li>The details are packed into the link itself. Nothing is uploaded or saved on this website.</li>
       <li>
-        It holds what you see on this page: device, browser, screen and settings. Every website you
-        visit can already read these.
+        {tr('The details are packed into the link itself. Nothing is uploaded or saved on this website.')}
       </li>
       <li>
-        No name (unless you add one in the note), no exact location (only your time zone and
-        language), no IP address, no photos, no passwords.
+        {tr('It holds what you see on this page: device, browser, screen and settings. Every website you visit can already read these.')}
       </li>
-      <li>Anyone who has the link can read it, so send it only to the person helping you.</li>
+      <li>
+        {tr('No name (unless you add one in the note), no exact location (only your time zone and language), no IP address, no photos, no passwords.')}
+      </li>
+      <li>
+        {tr('Anyone who has the link can read it, so send it only to the person helping you.')}
+      </li>
     </ul>
   </details>
 </section>
@@ -104,7 +127,7 @@
     display: grid;
     gap: 0.5rem;
     margin: 0.25rem 0 0;
-    padding-left: 1.1rem;
+    padding-inline-start: 1.1rem;
     color: var(--ink-soft);
     font-size: 0.95rem;
   }

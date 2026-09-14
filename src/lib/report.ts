@@ -1,3 +1,4 @@
+import { fill, type Lang, t } from './i18n'
 import { FIRST_TOKEN, packReport, unpackReport } from './link/compact'
 import { fromCoded, fromWire, toCoded } from './link/wire'
 
@@ -73,18 +74,23 @@ function fromTokenBytes(bytes: Uint8Array): string {
   return json
 }
 
-export function reportToText(report: Report, link = '', full = true): string {
-  const glance: Section = { title: 'At a glance', rows: report.summary }
-  const lines = [`Device details, captured ${new Date(report.at).toUTCString()}`]
-  if (report.note) lines.push(`Note: ${report.note}`)
+export function reportToText(report: Report, link = '', full = true, lang: Lang = 'en'): string {
+  const tr = (key: string): string => t(lang, key)
+  const glance: Section = { title: tr('At a glance'), rows: report.summary }
+  const lines = [
+    fill(tr('Device details, captured {date}'), { date: new Date(report.at).toUTCString() }),
+  ]
+  if (report.note) lines.push(`${tr('Note')}: ${report.note}`)
   for (const { title, rows } of full ? [glance, ...report.sections] : [glance]) {
     lines.push(
       '',
-      title.toUpperCase(),
-      ...rows.map(([label, value]) => `${label}: ${value ?? NOT_AVAILABLE}`),
+      tr(title).toUpperCase(),
+      ...rows.map(
+        ([label, value]) => `${tr(label)}: ${value === null ? tr(NOT_AVAILABLE) : tr(value)}`,
+      ),
     )
   }
-  if (link) lines.push('', `${full ? 'View as a page' : 'All details'}: ${link}`)
+  if (link) lines.push('', `${tr(full ? 'View as a page' : 'All details')}: ${link}`)
   return lines.join('\n')
 }
 

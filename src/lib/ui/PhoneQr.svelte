@@ -1,9 +1,10 @@
 <script lang="ts">
 import { encode } from 'uqr'
+import { type Lang, t } from '$lib/i18n'
 
-type Props = { url: string; title: string; body: string }
+type Props = { url: string; title: string; body: string; lang: Lang }
 
-let { url, title, body }: Props = $props()
+let { url, title, body, lang }: Props = $props()
 
 const QUIET = 4
 
@@ -25,7 +26,7 @@ const width = $derived(side * Math.max(3, Math.ceil(256 / side)))
     viewBox="{-QUIET} {-QUIET} {side} {side}"
     style:width="{width}px"
     role="img"
-    aria-label="QR code that opens this page on a phone"
+    aria-label={t(lang, 'QR code that opens this page on a phone')}
     shape-rendering="crispEdges"
   >
     <rect x={-QUIET} y={-QUIET} width={side} height={side} fill="#fff" />
