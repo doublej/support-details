@@ -160,12 +160,6 @@ const copyRow = (label: string, value: string) => copy(`${label}: ${value}`, `Co
       {/if}
     </section>
 
-    <PhoneQr
-      url={link}
-      title="Open this report on your phone"
-      body="Point your phone’s camera at this code to take these details with you."
-    />
-
     <ReportView {report} oncopy={copyRow}>
       <div class="actions rise" style:--i={1}>
         <button
