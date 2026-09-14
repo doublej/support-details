@@ -1,5 +1,6 @@
 import { deflateSync } from 'node:zlib'
 import { describe, expect, it } from 'vitest'
+import { legacyLink } from './fixtures'
 import { decodeReport, encodeReport, type Report, reportToText } from './report'
 
 const report: Report = {
@@ -22,6 +23,24 @@ const plainPayload = (value: unknown) =>
   `j${Buffer.from(JSON.stringify(value)).toString('base64url')}`
 
 describe('report links', () => {
+  // People have already sent links in this format. Never make this test pass by editing the link.
+  it('opens a real link written by the release before compact links', async () => {
+    const legacy = await decodeReport(legacyLink)
+    expect(legacy.at).toBe('2026-09-14T14:30:35.550Z')
+    expect(legacy.summary[0]).toEqual(['Device', 'Mac'])
+    expect(legacy.sections.map(({ title }) => title)).toEqual([
+      'Device',
+      'Browser',
+      'Screen',
+      'Appearance & accessibility',
+      'Permissions & media',
+      'Browser features',
+      'Network',
+      'Language & time',
+    ])
+    expect(legacy.sections[1].rows[2]).toEqual(['Cookies', 'Working'])
+  })
+
   it('round-trips through a compact, compressed, URL-safe payload', async () => {
     const payload = await encodeReport(report)
     expect(payload).toMatch(/^c[\w-]+$/)
