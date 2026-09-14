@@ -285,13 +285,21 @@ export type Lang = 'en' | 'zh' | 'hi' | 'es' | 'ar' | 'fr'
 
 const DICTS: Record<Exclude<Lang, 'en'>, Record<Key, string>> = { zh, hi, es, ar, fr }
 
-/** First navigator language whose base subtag we translate, else English. */
+/** Base subtag we can render, or null. Pure. */
+export function langFromTag(tag: string): Lang | null {
+  const base = tag.split('-')[0]?.toLowerCase()
+  if (base === 'en') return 'en'
+  if (base === 'zh' || base === 'hi' || base === 'es' || base === 'ar' || base === 'fr') {
+    return base
+  }
+  return null
+}
+
+/** First recognized navigator language, else English. Respects the order, 'en' included. */
 export function pickLanguage(tags: readonly string[] | undefined): Lang {
   for (const tag of tags ?? []) {
-    const base = tag.split('-')[0]?.toLowerCase()
-    if (base === 'zh' || base === 'hi' || base === 'es' || base === 'ar' || base === 'fr') {
-      return base
-    }
+    const lang = langFromTag(tag)
+    if (lang) return lang
   }
   return 'en'
 }
@@ -300,6 +308,45 @@ export function pickLanguage(tags: readonly string[] | undefined): Lang {
 export function currentLang(): Lang {
   if (typeof navigator === 'undefined') return 'en'
   return pickLanguage(navigator.languages ?? [navigator.language])
+}
+
+/** Manual ?lang= override from a query string. Pure: missing and unknown values give null. */
+export function langFromQuery(search: string): Lang | null {
+  const value = new URLSearchParams(search).get('lang')
+  return value ? langFromTag(value.trim()) : null
+}
+
+const STORED_LANG_KEY = 'support-details-lang'
+
+function readStoredLang(): Lang | null {
+  try {
+    return langFromTag(localStorage.getItem(STORED_LANG_KEY) ?? '')
+  } catch {
+    return null
+  }
+}
+
+function storeLang(lang: Lang): void {
+  try {
+    localStorage.setItem(STORED_LANG_KEY, lang)
+  } catch {
+    // Blocked storage: the page still works, the choice just won't stick.
+  }
+}
+
+/**
+ * Manual ?lang= wins and is remembered; then the stored choice, then the browser list. The
+ * query is stripped (keeping the report hash) so shared links stay language-neutral.
+ * Browser-only: call it on mount.
+ */
+export function resolveLang(): Lang {
+  const override = typeof location === 'undefined' ? null : langFromQuery(location.search)
+  if (override) {
+    storeLang(override)
+    history.replaceState(null, '', location.pathname + location.hash)
+    return override
+  }
+  return readStoredLang() ?? currentLang()
 }
 
 /** Translate a key; unknown keys (free-text values, crafted labels) pass through. */
