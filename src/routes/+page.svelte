@@ -2,7 +2,14 @@
 import { onMount } from 'svelte'
 import { copyText, shareLink } from '$lib/clipboard'
 import { collectReport } from '$lib/device/collect'
-import { decodeReport, encodeReport, HASH_KEY, type Report, reportToText } from '$lib/report'
+import {
+  decodeReport,
+  encodeReport,
+  HASH_PREFIX,
+  needsDecompression,
+  type Report,
+  reportToText,
+} from '$lib/report'
 import Credits from '$lib/ui/Credits.svelte'
 import PhoneQr from '$lib/ui/PhoneQr.svelte'
 import ReportView from '$lib/ui/ReportView.svelte'
@@ -34,7 +41,7 @@ const capturedAt = $derived(
 )
 
 async function load() {
-  const payload = location.hash.startsWith(HASH_KEY) ? location.hash.slice(HASH_KEY.length) : ''
+  const payload = location.hash.replace(HASH_PREFIX, '')
   link = ''
   if (!payload) {
     report = await collectReport()
@@ -44,8 +51,8 @@ async function load() {
   // Chat apps sometimes cut long links short, so a link that won't decode is an expected state.
   report = await decodeReport(payload).catch(() => null)
   link = location.href
-  // Safari before 16.4 cannot unpack compressed links at all; a resend would fail the same way.
-  tooOld = !report && typeof DecompressionStream === 'undefined'
+  // Safari before 16.4 cannot unpack deflated links at all; a resend would fail the same way.
+  tooOld = !report && needsDecompression(payload) && typeof DecompressionStream === 'undefined'
   mode = report ? 'shared' : 'broken'
 }
 
@@ -63,7 +70,7 @@ $effect(() => {
   const draft = outgoing
   if (mode !== 'own' || !draft) return
   encodeReport(draft).then((payload) => {
-    if (draft === outgoing) link = `${location.origin}/${HASH_KEY}${payload}`
+    if (draft === outgoing) link = `${location.origin}/#${payload}`
   })
 })
 

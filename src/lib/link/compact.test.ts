@@ -1,9 +1,9 @@
 import { deflateRawSync, inflateRawSync } from 'node:zlib'
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { macReport, tokenLink } from '../fixtures'
+import { codedLink, macReport, tokenLink, wireLink } from '../fixtures'
 import { decodeReport, encodeReport, type Report, type Row } from '../report'
 import { type Packed, packReport, unpackReport } from './compact'
-import { fromWire, toWire } from './wire'
+import { fromCoded, fromWire, toCoded, toWire } from './wire'
 
 // macReport packed exactly as the first compact release wrote it. If this test fails, a list in
 // compact.ts was reordered, shortened or reworded, and links people already sent now show wrong
@@ -111,18 +111,29 @@ describe('compact links', () => {
     expect(await decodeReport(`u${plain.toString('base64url')}`)).toEqual(macReport)
   })
 
-  it('round-trips a full report in about a seventh of a JSON link', async () => {
+  it('still opens links with deflated wire bytes', async () => {
+    expect(await decodeReport(wireLink)).toEqual(macReport)
+    const plain = inflateRawSync(Buffer.from(wireLink.slice(1), 'base64url'))
+    expect(await decodeReport(`a${plain.toString('base64url')}`)).toEqual(macReport)
+  })
+
+  // The priors in wire.ts and LIKELY are part of this format: a change there fails this test, and
+  // would open every coded link sent so far as nonsense. Never edit the link.
+  it('keeps opening links made by the first entropy-coded release', async () => {
+    expect(await decodeReport(codedLink)).toEqual(macReport)
+  })
+
+  it('round-trips a full report in a tenth of a JSON link', async () => {
     const payload = await encodeReport(macReport)
-    expect(payload).toMatch(/^b[\w-]+$/)
-    expect(payload.length).toBeLessThan(260)
+    expect(payload).toMatch(/^e[\w-]+$/)
+    expect(payload.length).toBeLessThanOrEqual(180)
     expect(await decodeReport(payload)).toEqual(macReport)
   })
 
-  it('falls back to plain wire bytes without CompressionStream', async () => {
+  it('needs no compression streams to write or read a link', async () => {
     vi.stubGlobal('CompressionStream', undefined)
+    vi.stubGlobal('DecompressionStream', undefined)
     const payload = await encodeReport(macReport)
-    expect(payload).toMatch(/^a[\w-]+$/)
-    expect(payload.length).toBeLessThan(300)
     expect(await decodeReport(payload)).toEqual(macReport)
   })
 
@@ -186,5 +197,41 @@ describe('wire bytes', () => {
     const bytes = toWire(packed)
     expect(() => fromWire(bytes.subarray(0, bytes.length - 1))).toThrow('Not a device report')
     expect(() => fromWire(new Uint8Array([...bytes, 0]))).toThrow('Not a device report')
+  })
+})
+
+describe('coded bytes', () => {
+  const [esc, token, privateUse] = [27, 0xe000, 0xf8ff].map((code) => String.fromCharCode(code))
+  const packed: Packed = [
+    'tlcsgj',
+    `Sam ${esc} ✓ 👋 ${token}${privateUse}`,
+    ['x'.repeat(200), 'short', 5, -1, 0, [`${token}${privateUse}`], token],
+    [
+      ['Later', 'New row', null],
+      ['Later', 'Other', 'as sent'],
+    ],
+  ]
+
+  it('round-trips every kind of value, byte for byte the same on every run', () => {
+    expect(fromCoded(toCoded(packed))).toEqual(packed)
+    expect(toCoded(packed)).toEqual(toCoded(packed))
+    expect(fromCoded(toCoded(['0', '', []]))).toEqual(['0', '', []])
+  })
+
+  it('rejects bytes cut short, left over, empty or random, without running away', () => {
+    const bytes = toCoded(packed)
+    for (const cut of [1, 4, 40]) {
+      expect(() => fromCoded(bytes.subarray(0, bytes.length - cut))).toThrow('Not a device report')
+    }
+    expect(() => fromCoded(new Uint8Array([...bytes, 1, 2, 3, 4]))).toThrow('Not a device report')
+    let seed = 7
+    const random = () => {
+      seed = (seed * 48271) % 2147483647
+      return seed & 255
+    }
+    for (let n = 0; n < 200; n++) {
+      const junk = Uint8Array.from({ length: n % 40 }, random)
+      expect(() => fromCoded(junk)).toThrow('Not a device report')
+    }
   })
 })
