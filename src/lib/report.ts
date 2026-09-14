@@ -1,5 +1,5 @@
 import { FIRST_TOKEN, packReport, unpackReport } from './link/compact'
-import { fromWire, toWire } from './link/wire'
+import { fromCoded, fromWire, toCoded } from './link/wire'
 
 /**
  * A captured device report. Links carry it in the compact format of compact.ts. Change the shape
@@ -9,18 +9,26 @@ export type Row = [label: string, value: string | null]
 export type Section = { title: string; rows: Row[] }
 export type Report = { v: 1; at: string; note: string; summary: Row[]; sections: Section[] }
 
-export const HASH_KEY = '#r='
+// A link is the origin, '/#' and the payload; links sent before 15 Sep 2026 have '#r=' in front.
+export const HASH_PREFIX = /^#(r=)?/
 export const NOT_AVAILABLE = 'Not available'
 
-// Payload = format flag + base64url. 'b' is the compact form as wire bytes (wire.ts), deflated;
-// 'a' is the same plain, for browsers without CompressionStream (Safari before 16.4). Older links
-// are still read, no longer written: 't' / 'u' (compact form as JSON in token bytes, deflated /
-// plain), 'c' / 'p' (compact form as JSON in UTF-8) and 'z' / 'j' (self-describing JSON, deflated
-// with a zlib header / plain).
+// Payload = format flag + base64url. 'e' is the compact form as wire bytes (wire.ts) through the
+// arithmetic coder of coder.ts, the same in every browser. Older links are still read, no longer
+// written: 'b' / 'a' (wire bytes deflated / plain), 't' / 'u' (compact form as JSON in token
+// bytes, deflated / plain), 'c' / 'p' (compact form as JSON in UTF-8) and 'z' / 'j'
+// (self-describing JSON, deflated with a zlib header / plain).
 const FORMATS: Record<
   string,
-  { compression?: CompressionFormat; wire?: boolean; compact?: boolean; tokenBytes?: boolean }
+  {
+    compression?: CompressionFormat
+    coded?: boolean
+    wire?: boolean
+    compact?: boolean
+    tokenBytes?: boolean
+  }
 > = {
+  e: { coded: true },
   b: { compression: 'deflate-raw', wire: true },
   a: { wire: true },
   t: { compression: 'deflate-raw', compact: true, tokenBytes: true },
@@ -32,15 +40,18 @@ const FORMATS: Record<
 }
 
 export async function encodeReport(report: Report): Promise<string> {
-  const bytes = toWire(packReport(report))
-  if (typeof CompressionStream === 'undefined') return `a${toBase64Url(bytes)}`
-  return `b${toBase64Url(await transform(bytes, new CompressionStream('deflate-raw')))}`
+  return `e${toBase64Url(toCoded(packReport(report)))}`
 }
+
+/** Whether opening the link needs DecompressionStream, which Safari before 16.4 lacks. */
+export const needsDecompression = (payload: string): boolean =>
+  FORMATS[payload[0]]?.compression !== undefined
 
 export async function decodeReport(payload: string): Promise<Report> {
   const format = FORMATS[payload[0]]
   if (!format) throw new Error('Not a device report')
   const bytes = fromBase64Url(payload.slice(1))
+  if (format.coded) return parseReport(unpackReport(fromCoded(bytes)))
   const raw = format.compression
     ? await transform(bytes, new DecompressionStream(format.compression))
     : bytes
@@ -79,7 +90,7 @@ export function reportToText(report: Report, link = '', full = true): string {
 
 async function transform(
   bytes: Uint8Array<ArrayBuffer>,
-  stream: CompressionStream | DecompressionStream,
+  stream: DecompressionStream,
 ): Promise<Uint8Array<ArrayBuffer>> {
   const piped = new Blob([bytes]).stream().pipeThrough(stream)
   return new Uint8Array(await new Response(piped).arrayBuffer())
